@@ -99,6 +99,7 @@ def checkVideoFormat(d):
                 video = True
     return format and video
 
+
 def getNewVideoName(d):
     for f in d['tracks']:
         if f['track_type'] == 'General':
@@ -108,6 +109,7 @@ def getNewVideoName(d):
                 if os.path.isfile(os.path.join(f['folder_name'], f['file_name']+'.mp4')):
                     return os.path.join(f['folder_name'], FILE_NAME+'_convert_'+f['file_name']+str(random.randint(0, 1000))+'.mp4')
                 return os.path.join(f['folder_name'], FILE_NAME+'_convert_'+f['file_name']+'.mp4')
+
 
 def getNewSize(d):
     for f in d['tracks']:
@@ -314,7 +316,8 @@ if __name__ == '__main__':
                 if checkVideoFormat(data) and ziptype != 'image':
                     size = getNewSize(data)
                     dst = getNewVideoName(data)
-                    if not dst:continue
+                    if not dst:
+                        continue
                     zipVideo.lck.acquire()
                     if len(zipVideo.tlist) >= zipVideo.maxthreads:
                         zipVideo.lck.release()
@@ -325,7 +328,8 @@ if __name__ == '__main__':
                             **{'src': file, 'dst': dst, 'size': size})
                 elif checkImageFormat(data) and ziptype != 'video':
                     outfile = get_new_img_name(data)
-                    if not outfile: continue
+                    if not outfile:
+                        continue
                     zipImg.lck.acquire()
                     # 如果目前线程队列超过了设定的上线则等待。
                     if len(zipImg.tlist) >= zipImg.maxthreads:
