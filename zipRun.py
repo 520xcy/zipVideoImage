@@ -18,6 +18,9 @@ import datetime
 MAX_CONNECTIONS = 2  # 同时转码进程数量
 BASHPATH = os.getcwd()
 VIDEO_FORMAT = ['MPEG-4', 'AVI', 'Matroska', 'Windows Media']
+VIDEO_BIT = '2000k'
+VIDEO_MAX_WIDTH = '1280'
+IMAGE_WIDTH = 1800
 IMAGE_FORMAT = ['JPEG', 'Bitmap', 'GIF', 'PNG']
 FILE_NAME = os.path.split(__file__)[-1].split('.')[0]
 SUCCESS_LOG = os.path.join(
@@ -29,60 +32,60 @@ FFMPEG_CMD = {
     'hdhe': {
         'darwin': {
             'inputs': '-y -hwaccel videotoolbox',
-            'outputs': '-loglevel quiet -b:v 2000k -c:v h264_videotoolbox -acodec copy -bufsize 2000k -f mp4 -vf scale=%s'
+            'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -acodec copy -bufsize %s -f mp4 -vf scale=%s'
         },
         'linux': {
             'inputs': '-y -hwaccel vaapi -hwaccel_output_format vaapi -hwaccel_device /dev/dri/renderD128',
-            'outputs': '-loglevel quiet -b:v 2000k -c:v h264_vaapi -acodec copy -bufsize 2000k -f mp4 -vf scale_vaapi=%s'
+            'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -acodec copy -bufsize %s -f mp4 -vf scale_vaapi=%s'
         },
         'win32': {
             'inputs': '-y -hwaccel cuda -c:v h264_cuvid -hwaccel_output_format cuda',
-            'outputs': '-loglevel quiet -b:v 2000k -c:v h264_nvenc -acodec copy -bufsize 2000k -f mp4 -vf scale_cuda=%s'
+            'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -acodec copy -bufsize %s -f mp4 -vf scale_cuda=%s'
         }
     },
     # 软解硬编
     'sdhe': {
         'darwin': {
             'inputs': '-y',
-            'outputs': '-loglevel quiet -b:v 2000k -c:v h264_videotoolbox -acodec copy -bufsize 2000k -f mp4 -vf scale=%s'
+            'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -acodec copy -bufsize %s -f mp4 -vf scale=%s'
         },
         'linux': {
             'inputs': '-y -hwaccel_output_format vaapi',
-            'outputs': '-loglevel quiet -b:v 2000k -c:v h264_vaapi -acodec copy -bufsize 2000k -f mp4 -vf scale=%s'
+            'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -acodec copy -bufsize %s -f mp4 -vf scale=%s'
         },
         'win32': {
             'inputs': '-y -hwaccel_output_format cuda',
-            'outputs': '-loglevel quiet -b:v 2000k -c:v h264_nvenc -acodec copy -bufsize 2000k -f mp4 -vf scale=%s'
+            'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -acodec copy -bufsize %s -f mp4 -vf scale=%s'
         }
     },
     # 硬解软编
     'hdse': {
         'darwin': {
             'inputs': '-y -hwaccel videotoolbox',
-            'outputs': '-loglevel quiet -b:v 2000k -c:v libx264 -acodec copy -bufsize 2000k -f mp4 -vf scale=%s'
+            'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
         },
         'linux': {
             'inputs': '-y -hwaccel vaapi -hwaccel_device /dev/dri/renderD128',
-            'outputs': '-loglevel quiet -b:v 2000k -c:v libx264 -acodec copy -bufsize 2000k -f mp4 -vf scale=%s'
+            'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
         },
         'win32': {
             'inputs': '-y -hwaccel cuda -c:v h264_cuvid',
-            'outputs': '-loglevel quiet -b:v 2000k -c:v libx264 -acodec copy -bufsize 2000k -f mp4 -vf scale=%s'
+            'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
         }
     },
     # 软解软编
     'sdse': {
         'darwin': {
             'inputs': '-y',
-            'outputs': '-loglevel quiet -b:v 2000k -c:v libx264 -acodec copy -bufsize 2000k -f mp4 -vf scale=%s'
+            'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
         },
         'linux': {
             'inputs': '-y',
-            'outputs': '-loglevel quiet -b:v 2000k -c:v libx264 -acodec copy -bufsize 2000k -f mp4 -vf scale=%s'
+            'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
         },
         'win32': {
             'inputs': '-y',
-            'outputs': '-loglevel quiet -b:v 2000k -c:v libx264 -acodec copy -bufsize 2000k -f mp4 -vf scale=%s'
+            'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
         }
     }
 }
@@ -116,9 +119,9 @@ def getNewSize(d):
     for f in d['tracks']:
         if f['track_type'] == 'Video':
             if f["width"] > f["height"]:
-                return '1280:-1'
+                return VIDEO_MAX_WIDTH + ':-1'
             else:
-                return '-1:1280'
+                return '-1:' + VIDEO_MAX_WIDTH
 
 
 def fileList(path):
@@ -138,14 +141,14 @@ def writeFile(path, str):
 # 转码
 
 
-def runFfmpy(src, dst, s='-1:720'):
+def runFfmpy(src, dst, s):
     for run_type in FFMPEG_CMD:
         try:
             s_time = time.time()
             ff = ffmpy.FFmpeg(
                 inputs={src: FFMPEG_CMD[run_type][sys.platform]['inputs']},
                 outputs={dst: FFMPEG_CMD[run_type]
-                         [sys.platform]['outputs'] % s}
+                         [sys.platform]['outputs'] % (VIDEO_BIT, VIDEO_BIT, s)}
             )
             print('执行', ff.cmd)
             ff.run()
@@ -159,7 +162,6 @@ def runFfmpy(src, dst, s='-1:720'):
 
 class zipVideo(threading.Thread):
     tlist = []  # 用来存储队列的线程
-    # int(sys.argv[2])最大的并发数量，此处我设置为100，测试下系统最大支持1000多个
     maxthreads = MAX_CONNECTIONS
     evnt = threading.Event()  # 用事件来让超过最大线程设置的并发程序等待
     lck = threading.Lock()  # 线程锁
@@ -226,15 +228,15 @@ def get_new_img_name(d):
                 return os.path.join(f['folder_name'], FILE_NAME+'_resize_'+f['file_name']+'.jpg')
 
 
-def zip_img(infile, outfile, x_s=1800, kb=1024, step=10, quality=90):
+def zip_img(infile, outfile, kb=1024, step=10, quality=90):
     o_size = get_size(infile)
     with Image.open(infile) as im:
         x, y = im.size
-        if x <= x_s:
+        if x <= IMAGE_WIDTH:
             return outfile, o_size, o_size
-        y_s = int(y * x_s / x)
+        y_s = int(y * IMAGE_WIDTH / x)
         im = im.convert('RGB')
-        im.resize((x_s, y_s))
+        im.resize((IMAGE_WIDTH, y_s))
         im.save(outfile, quality=100)
         while get_size(outfile) > kb:
             im.save(outfile, quality=quality)
@@ -290,21 +292,29 @@ class zipImg(threading.Thread):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='自动压缩图片和视频文件')
-    parser.add_argument('-t', type=str, default='',
+    parser.add_argument('-t', '--type', type=str, default='',
                         metavar=('video|images'), help='处理类型')
-    parser.add_argument('-d', type=str, default=os.getcwd(),
+    parser.add_argument('-d', '--dir', type=str, default=os.getcwd(),
                         metavar=(''), help='处理目录的绝对路径')
+    parser.add_argument('-vbit', type=str, default=VIDEO_BIT,
+                        metavar=(VIDEO_BIT), help='视频码率')
+    parser.add_argument('-vmw', type=str, default=VIDEO_MAX_WIDTH,
+                        metavar=(VIDEO_MAX_WIDTH), help='视频最长边像素')
+    parser.add_argument('-imw', type=int, default=IMAGE_WIDTH,
+                        metavar=(IMAGE_WIDTH), help='图片最长边像素')
     args = parser.parse_args()
-    if args.t in ['', 'video', 'image']:
-        ziptype = args.t
+    if args.type in ['', 'video', 'image']:
+        ziptype = args.type
     else:
         print('t参数为video或image')
         exit()
-    path = args.d
+    path = args.dir
     if not os.path.isdir(path):
         print('所选路径错误')
         exit()
-
+    VIDEO_BIT = args.vbit
+    VIDEO_MAX_WIDTH = args.vmw
+    IMAGE_WIDTH = args.imw
     pool_sema = threading.Semaphore(MAX_CONNECTIONS*2)
     files = fileList(path)
     count = len(files)
@@ -325,8 +335,8 @@ if __name__ == '__main__':
                         zipVideo.evnt.wait()  # zipVideo.evnt.set()遇到set事件则等待结束
                     else:
                         zipVideo.lck.release()
-                        zipVideo.newthread(
-                            **{'src': file, 'dst': dst, 'size': size})
+                    zipVideo.newthread(
+                        **{'src': file, 'dst': dst, 'size': size})
                 elif checkImageFormat(data) and ziptype != 'video':
                     outfile = get_new_img_name(data)
                     if not outfile:
@@ -339,11 +349,13 @@ if __name__ == '__main__':
                     else:
                         zipImg.lck.release()
                     zipImg.newthread(file, outfile)
+                bar()
+
             except KeyboardInterrupt:
                 exit()
             except FileNotFoundError as e:
                 writeFile(ERROR_LOG, f'{file}: {str(e)}\n\r')
                 pass
-            bar()
+
     for list in (zipVideo.tlist + zipImg.tlist):
         list.join()
