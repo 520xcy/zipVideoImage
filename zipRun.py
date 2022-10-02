@@ -13,6 +13,8 @@ import random
 import argparse
 import datetime
 
+GB = 1024 ** 3
+MB = 1024 ** 2
 MAX_CONNECTIONS = 2  # 同时转码进程数量
 BASHPATH = os.getcwd()
 VIDEO_FORMAT = ['MPEG-4', 'AVI', 'Matroska', 'Windows Media']
@@ -140,6 +142,7 @@ def writeFile(path, str):
 
 
 def runFfmpy(src, dst, s):
+    o_size = get_size(src)
     for run_type in FFMPEG_CMD:
         try:
             s_time = time.time()
@@ -151,7 +154,8 @@ def runFfmpy(src, dst, s):
             print('执行', ff.cmd)
             ff.run()
             e_time = time.time()
-            return run_type, round(e_time-s_time)
+            d_size = get_size(dst)
+            return run_type, o_size, d_size, round(e_time-s_time)
         except:
             continue
 
@@ -172,8 +176,10 @@ class zipVideo(threading.Thread):
 
     def run(self):
         try:
-            run_type, run_time = runFfmpy(self.src, self.dst, self.size)
-            writeFile(SUCCESS_LOG, f'{run_type} {self.src} 耗时{run_time}秒\n\r')
+            run_type, o_size, d_size, run_time = runFfmpy(
+                self.src, self.dst, self.size)
+            writeFile(
+                SUCCESS_LOG, f'{run_type} {self.src} {o_size}mb ==> {d_size}mb 耗时{run_time}秒\n\r')
             os.remove(self.src)
             os.rename(self.dst, os.path.splitext(self.src)[0]+'.mp4')
         except Exception as e:
@@ -210,9 +216,9 @@ def checkImageFormat(d):
 
 
 def get_size(file):
-    # 获取文件大小:KB
+    # 获取文件大小:MB
     size = os.path.getsize(file)
-    return size / 1024
+    return size / MB
 
 
 def get_new_img_name(d):
@@ -264,7 +270,7 @@ class zipImg(threading.Thread):
             d_filePath, o_size, d_size = zip_img(self.filePath, self.outfile)
             if o_size != d_size:
                 writeFile(SUCCESS_LOG,
-                          f'{self.filePath} => {d_filePath} Size: {int(o_size)}kb => {int(d_size)}kb\n\r')
+                          f'{self.filePath} => {d_filePath} Size: {int(o_size)}mb => {int(d_size)}mb\n\r')
         except Exception as e:
             writeFile(ERROR_LOG, f'{self.filePath}: {str(e)}\n\r')
             pass
