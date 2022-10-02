@@ -1,7 +1,5 @@
 # encoding: utf-8
 
-from email import message
-from genericpath import isdir
 import os
 import json
 import sys
@@ -18,7 +16,7 @@ import datetime
 MAX_CONNECTIONS = 2  # 同时转码进程数量
 BASHPATH = os.getcwd()
 VIDEO_FORMAT = ['MPEG-4', 'AVI', 'Matroska', 'Windows Media']
-VIDEO_BIT = '2000k'
+VIDEO_BIT = '2500k'
 VIDEO_MAX_WIDTH = '1280'
 IMAGE_WIDTH = 1800
 IMAGE_FORMAT = ['JPEG', 'Bitmap', 'GIF', 'PNG']
