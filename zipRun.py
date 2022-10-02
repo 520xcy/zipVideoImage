@@ -303,13 +303,12 @@ if __name__ == '__main__':
         exit()
 
     pool_sema = threading.Semaphore(MAX_CONNECTIONS*2)
-    try:
-        files = fileList(path)
-        count = len(files)
-        start = time.perf_counter()
-        with alive_bar(len(files)) as bar:
-            for file in files:
-                bar()
+    files = fileList(path)
+    count = len(files)
+    start = time.perf_counter()
+    with alive_bar(len(files)) as bar:
+        for file in files:
+            try:
                 media_info = MediaInfo.parse(file)
                 data = json.loads(media_info.to_json())
                 if checkVideoFormat(data) and ziptype != 'image':
@@ -325,7 +324,6 @@ if __name__ == '__main__':
                         zipVideo.newthread(
                             **{'src': file, 'dst': dst, 'size': size})
                 elif checkImageFormat(data) and ziptype != 'video':
-
                     outfile = get_new_img_name(data)
                     if not outfile: continue
                     zipImg.lck.acquire()
@@ -336,8 +334,11 @@ if __name__ == '__main__':
                     else:
                         zipImg.lck.release()
                     zipImg.newthread(file, outfile)
-
-        for list in (zipVideo.tlist + zipImg.tlist):
-            list.join()
-    except KeyboardInterrupt:
-        exit()
+            except KeyboardInterrupt:
+                exit()
+            except FileNotFoundError as e:
+                writeFile(ERROR_LOG, f'{file}: {str(e)}\n\r')
+                pass
+            bar()
+    for list in (zipVideo.tlist + zipImg.tlist):
+        list.join()
