@@ -13,16 +13,17 @@ from PIL import Image
 from alive_progress import alive_bar
 import random
 import argparse
+import datetime
 
 MAX_CONNECTIONS = 2  # 同时转码进程数量
 BASHPATH = os.getcwd()
 VIDEO_FORMAT = ['MPEG-4', 'AVI', 'Matroska', 'Windows Media']
 IMAGE_FORMAT = ['JPEG', 'Bitmap', 'GIF', 'PNG']
-LOG_FILE = str(time.time())
 FILE_NAME = os.path.split(__file__)[-1].split('.')[0]
 SUCCESS_LOG = os.path.join(
-    BASHPATH, FILE_NAME+'-success-'+str(time.time())+'.txt')
-ERROR_LOG = os.path.join(BASHPATH, FILE_NAME+'-error-'+str(time.time())+'.txt')
+    BASHPATH, FILE_NAME+'-success-'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.txt')
+ERROR_LOG = os.path.join(BASHPATH, FILE_NAME+'-error-' +
+                         datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.txt')
 FFMPEG_CMD = {
     # 硬编硬解
     'hdhe': {
@@ -149,7 +150,7 @@ def runFfmpy(src, dst, s='-1:720'):
             print('执行', ff.cmd)
             ff.run()
             e_time = time.time()
-            return run_type, e_time-s_time
+            return run_type, round(e_time-s_time)
         except:
             continue
 
@@ -172,7 +173,7 @@ class zipVideo(threading.Thread):
     def run(self):
         try:
             run_type, run_time = runFfmpy(self.src, self.dst, self.size)
-            writeFile(SUCCESS_LOG, f'{run_type} {self.src} {run_time}\n\r')
+            writeFile(SUCCESS_LOG, f'{run_type} {self.src} 耗时{run_time}秒\n\r')
             os.remove(self.src)
             os.rename(self.dst, os.path.splitext(self.src)[0]+'.mp4')
         except Exception as e:
