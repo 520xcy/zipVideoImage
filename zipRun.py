@@ -27,68 +27,52 @@ SUCCESS_LOG = os.path.join(
     BASHPATH, FILE_NAME+'-success-'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.txt')
 ERROR_LOG = os.path.join(BASHPATH, FILE_NAME+'-error-' +
                          datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.txt')
-FFMPEG_CMD = {
+FFMPEG_CMD = [
     # 硬编硬解
-    'hdhe': {
-        'darwin': {
-            'inputs': '-y -hwaccel videotoolbox',
-            'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -acodec copy -bufsize %s -f mp4 -vf scale=%s'
-        },
-        'linux': {
-            'inputs': '-y -hwaccel vaapi -hwaccel_output_format vaapi -hwaccel_device /dev/dri/renderD128',
-            'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -acodec copy -bufsize %s -f mp4 -vf scale_vaapi=%s'
-        },
-        'win32': {
-            'inputs': '-y -hwaccel cuda -c:v h264_cuvid -hwaccel_output_format cuda',
-            'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -acodec copy -bufsize %s -f mp4 -vf scale_cuda=%s'
-        }
+    {
+        'inputs': '-y -hwaccel videotoolbox',
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -acodec copy -bufsize %s -f mp4 -vf scale=%s'
+    },
+    {
+        'inputs': '-y -hwaccel vaapi -hwaccel_output_format vaapi -hwaccel_device /dev/dri/renderD128',
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -acodec copy -bufsize %s -f mp4 -vf scale_vaapi=%s'
+    },
+    {
+        'inputs': '-y -hwaccel cuda -c:v h264_cuvid -hwaccel_output_format cuda',
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -acodec copy -bufsize %s -f mp4 -vf scale_cuda=%s'
     },
     # 软解硬编
-    'sdhe': {
-        'darwin': {
-            'inputs': '-y',
-            'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -acodec copy -bufsize %s -f mp4 -vf scale=%s'
-        },
-        'linux': {
-            'inputs': '-y -hwaccel_output_format vaapi',
-            'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -acodec copy -bufsize %s -f mp4 -vf scale=%s'
-        },
-        'win32': {
-            'inputs': '-y -hwaccel_output_format cuda',
-            'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -acodec copy -bufsize %s -f mp4 -vf scale=%s'
-        }
+    {
+        'inputs': '-y',
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -acodec copy -bufsize %s -f mp4 -vf scale=%s'
+    },
+    {
+        'inputs': '-y -hwaccel_output_format vaapi',
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -acodec copy -bufsize %s -f mp4 -vf scale=%s'
+    },
+    {
+        'inputs': '-y -hwaccel_output_format cuda',
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -acodec copy -bufsize %s -f mp4 -vf scale=%s'
     },
     # 硬解软编
-    'hdse': {
-        'darwin': {
-            'inputs': '-y -hwaccel videotoolbox',
-            'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
-        },
-        'linux': {
-            'inputs': '-y -hwaccel vaapi -hwaccel_device /dev/dri/renderD128',
-            'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
-        },
-        'win32': {
-            'inputs': '-y -hwaccel cuda -c:v h264_cuvid',
-            'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
-        }
+    {
+        'inputs': '-y -hwaccel videotoolbox',
+        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
+    },
+    {
+        'inputs': '-y -hwaccel vaapi -hwaccel_device /dev/dri/renderD128',
+        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
+    },
+    {
+        'inputs': '-y -hwaccel cuda -c:v h264_cuvid',
+        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
     },
     # 软解软编
-    'sdse': {
-        'darwin': {
-            'inputs': '-y',
-            'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
-        },
-        'linux': {
-            'inputs': '-y',
-            'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
-        },
-        'win32': {
-            'inputs': '-y',
-            'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
-        }
+    {
+        'inputs': '-y',
+        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
     }
-}
+]
 
 
 def checkVideoFormat(d):
@@ -147,15 +131,14 @@ def runFfmpy(src, dst, s):
         try:
             s_time = time.time()
             ff = ffmpy.FFmpeg(
-                inputs={src: FFMPEG_CMD[run_type][sys.platform]['inputs']},
-                outputs={dst: FFMPEG_CMD[run_type]
-                         [sys.platform]['outputs'] % (VIDEO_BIT, VIDEO_BIT, s)}
+                inputs={src: run_type['inputs']},
+                outputs={dst: run_type['outputs'] % (VIDEO_BIT, VIDEO_BIT, s)}
             )
             print('执行', ff.cmd)
             ff.run()
             e_time = time.time()
             d_size = get_size(dst)
-            return run_type, o_size, d_size, round(e_time-s_time)
+            return o_size, d_size, round(e_time-s_time)
         except:
             continue
 
@@ -176,10 +159,10 @@ class zipVideo(threading.Thread):
 
     def run(self):
         try:
-            run_type, o_size, d_size, run_time = runFfmpy(
+            o_size, d_size, run_time = runFfmpy(
                 self.src, self.dst, self.size)
             writeFile(
-                SUCCESS_LOG, f'{run_type} {self.src} {o_size}mb ==> {d_size}mb 耗时{run_time}秒\n\r')
+                SUCCESS_LOG, f'{self.src} {o_size}mb => {d_size}mb 耗时{run_time}秒\n\r')
             os.remove(self.src)
             os.rename(self.dst, os.path.splitext(self.src)[0]+'.mp4')
         except Exception as e:
