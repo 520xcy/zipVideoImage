@@ -139,8 +139,10 @@ def runFfmpy(src, dst, s):
             e_time = time.time()
             d_size = get_size(dst)
             return o_size, d_size, round(e_time-s_time)
-        except:
+        except ffmpy.FFRuntimeError:
             continue
+        except Exception as e:
+            raise e
 
     raise RuntimeError('未找到合适的解码方式')
 
