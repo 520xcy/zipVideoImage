@@ -306,6 +306,7 @@ if __name__ == '__main__':
     start = time.perf_counter()
     with alive_bar(len(files)) as bar:
         for file in files:
+            bar()
             try:
                 media_info = MediaInfo.parse(file)
                 data = json.loads(media_info.to_json())
@@ -334,8 +335,6 @@ if __name__ == '__main__':
                     else:
                         zipImg.lck.release()
                     zipImg.newthread(file, outfile)
-                bar()
-
             except KeyboardInterrupt:
                 exit()
             except FileNotFoundError as e:
