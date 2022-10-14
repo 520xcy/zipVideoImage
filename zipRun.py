@@ -91,12 +91,10 @@ def checkVideoFormat(d):
 def getNewVideoName(d):
     for f in d['tracks']:
         if f['track_type'] == 'General':
-            if not FILE_NAME+'_convert_' in f['file_name_extension']:
-                return os.path.join(f['folder_name'], FILE_NAME+'_convert_'+f['file_name_extension'])
-            else:
-                if os.path.isfile(os.path.join(f['folder_name'], f['file_name']+'.mp4')):
-                    return os.path.join(f['folder_name'], FILE_NAME+'_convert_'+f['file_name']+str(random.randint(0, 1000))+'.mp4')
-                return os.path.join(f['folder_name'], FILE_NAME+'_convert_'+f['file_name']+'.mp4')
+            if not FILE_NAME+'_convert_' in str(f['file_name']):
+                if os.path.isfile(os.path.join(f['folder_name'], str(f['file_name'])+'.mp4')):
+                    return os.path.join(f['folder_name'], FILE_NAME+'_convert_'+str(f['file_name'])+str(random.randint(0, 1000))+'.mp4')
+                return os.path.join(f['folder_name'], FILE_NAME+'_convert_'+str(f['file_name'])+'.mp4')
 
 
 def getNewSize(d):
@@ -208,13 +206,13 @@ def get_size(file):
 
 def get_new_img_name(d):
     for f in d['tracks']:
+        print(f)
         if f['track_type'] == 'General':
-            if f['format'] == 'JPEG' and not FILE_NAME+'_resize_' in f['file_name_extension']:
-                return os.path.join(f['folder_name'], FILE_NAME+'_resize_'+f['file_name_extension'])
-            else:
-                if os.path.isfile(os.path.join(f['folder_name'], f['file_name']+'.jpg')):
-                    return os.path.join(f['folder_name'], FILE_NAME+'_resize_'+f['file_name']+str(random.randint(0, 1000))+'.jpg')
-                return os.path.join(f['folder_name'], FILE_NAME+'_resize_'+f['file_name']+'.jpg')
+            
+            if not FILE_NAME+'_resize_' in str(f['file_name']):
+                if os.path.isfile(os.path.join(f['folder_name'], str(os.path.splitext(f['file_name'])[0])+'.jpg')):
+                    return os.path.join(f['folder_name'], FILE_NAME+'_resize_'+str(os.path.splitext(f['file_name'])[0])+str(random.randint(0, 1000))+'.jpg')
+                return os.path.join(f['folder_name'], FILE_NAME+'_resize_'+str(os.path.splitext(f['file_name'])[0])+'.jpg')
 
 
 def zip_img(infile, outfile, kb=1024, step=10, quality=90):
@@ -233,8 +231,8 @@ def zip_img(infile, outfile, kb=1024, step=10, quality=90):
                 break
             quality -= step
         os.remove(infile)
-        os.rename(outfile, outfile.replace(FILE_NAME+'resize_', ''))
-        d_size = get_size(outfile.replace(FILE_NAME+'resize_', ''))
+        os.rename(outfile, outfile.replace(FILE_NAME+'_resize_', ''))
+        d_size = get_size(outfile.replace(FILE_NAME+'_resize_', ''))
         return outfile, o_size, d_size
 
 
@@ -348,3 +346,4 @@ if __name__ == '__main__':
 
     for list in (zipVideo.tlist + zipImg.tlist):
         list.join()
+
