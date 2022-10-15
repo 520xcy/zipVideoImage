@@ -207,7 +207,7 @@ def get_size(file):
 def get_new_img_name(d):
     for f in d['tracks']:
         if f['track_type'] == 'General':
-            if not FILE_NAME+'_resize_' in str(f['file_name']):
+            if FILE_NAME+'_resize_' in str(f['file_name']):
                 if os.path.isfile(os.path.join(f['folder_name'], os.path.splitext(str(f['file_name']))[0])+'.jpg'):
                     return os.path.join(f['folder_name'], FILE_NAME+'_resize_'+os.path.splitext(str(f['file_name']))[0]+str(random.randint(0, 1000))+'.jpg')
                 return os.path.join(f['folder_name'], FILE_NAME+'_resize_'+os.path.splitext(str(f['file_name']))[0]+'.jpg')
@@ -221,16 +221,16 @@ def zip_img(infile, outfile, kb=1024, step=10, quality=90):
             return outfile, o_size, o_size
         y_s = int(y * IMAGE_WIDTH / x)
         im = im.convert('RGB')
-        im.resize((IMAGE_WIDTH, y_s))
+        im = im.resize((IMAGE_WIDTH, y_s))
         im.save(outfile, quality=100)
         while get_size(outfile) > kb:
             im.save(outfile, quality=quality)
             if quality - step <= 0:
                 break
             quality -= step
+        d_size = get_size(outfile)
         os.remove(infile)
         os.rename(outfile, os.path.splitext(infile)[0]+'.jpg')
-        d_size = get_size(os.path.splitext(infile)[0]+'.jpg')
         return outfile, o_size, d_size
 
 
@@ -335,6 +335,8 @@ if __name__ == '__main__':
                     else:
                         zipImg.lck.release()
                     zipImg.newthread(file, outfile)
+                
+
             except KeyboardInterrupt:
                 exit()
             except FileNotFoundError as e:
