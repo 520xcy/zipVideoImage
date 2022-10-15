@@ -92,9 +92,9 @@ def getNewVideoName(d):
     for f in d['tracks']:
         if f['track_type'] == 'General':
             if not FILE_NAME+'_convert_' in str(f['file_name']):
-                if os.path.isfile(os.path.join(f['folder_name'], str(f['file_name'])+'.mp4')):
-                    return os.path.join(f['folder_name'], FILE_NAME+'_convert_'+str(f['file_name'])+str(random.randint(0, 1000))+'.mp4')
-                return os.path.join(f['folder_name'], FILE_NAME+'_convert_'+str(f['file_name'])+'.mp4')
+                if os.path.isfile(os.path.join(f['folder_name'], os.path.splitext(str(f['file_name']))[0])+'.mp4'):
+                    return os.path.join(f['folder_name'], FILE_NAME+'_convert_'+os.path.splitext(str(f['file_name']))[0]+str(random.randint(0, 1000))+'.mp4')
+                return os.path.join(f['folder_name'], FILE_NAME+'_convert_'+os.path.splitext(str(f['file_name']))[0]+'.mp4')
 
 
 def getNewSize(d):
@@ -229,8 +229,8 @@ def zip_img(infile, outfile, kb=1024, step=10, quality=90):
                 break
             quality -= step
         os.remove(infile)
-        os.rename(outfile, outfile.replace(FILE_NAME+'_resize_', ''))
-        d_size = get_size(outfile.replace(FILE_NAME+'_resize_', ''))
+        os.rename(outfile, os.path.splitext(infile)[0]+'.jpg')
+        d_size = get_size(os.path.splitext(infile)[0]+'.jpg')
         return outfile, o_size, d_size
 
 
