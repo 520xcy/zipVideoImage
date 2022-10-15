@@ -207,7 +207,7 @@ def get_size(file):
 def get_new_img_name(d):
     for f in d['tracks']:
         if f['track_type'] == 'General':
-            if FILE_NAME+'_resize_' in str(f['file_name']):
+            if not FILE_NAME+'_resize_' in str(f['file_name']):
                 if os.path.isfile(os.path.join(f['folder_name'], os.path.splitext(str(f['file_name']))[0])+'.jpg'):
                     return os.path.join(f['folder_name'], FILE_NAME+'_resize_'+os.path.splitext(str(f['file_name']))[0]+str(random.randint(0, 1000))+'.jpg')
                 return os.path.join(f['folder_name'], FILE_NAME+'_resize_'+os.path.splitext(str(f['file_name']))[0]+'.jpg')
