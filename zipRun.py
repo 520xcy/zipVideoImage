@@ -17,7 +17,7 @@ GB = 1024 ** 3
 MB = 1024 ** 2
 MAX_CONNECTIONS = 2  # 同时转码进程数量
 BASHPATH = os.getcwd()
-VIDEO_FORMAT = ['MPEG-4', 'AVI', 'Matroska', 'Windows Media']
+VIDEO_FORMAT = ['MPEG-4', 'AVI', 'Matroska']
 VIDEO_BIT = '2500k'
 VIDEO_MAX_WIDTH = '1280'
 IMAGE_WIDTH = 1800
@@ -31,46 +31,46 @@ FFMPEG_CMD = [
     # 硬编硬解
     {
         'inputs': '-y -hwaccel videotoolbox',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -acodec copy -bufsize %s -f mp4 -vf scale=%s'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -acodec copy -bufsize %s -f mp4 -vf ""scale=%s""'
     },
     {
         'inputs': '-y -hwaccel vaapi -hwaccel_output_format vaapi -hwaccel_device /dev/dri/renderD128',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -acodec copy -bufsize %s -f mp4 -vf scale_vaapi=%s'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -acodec copy -bufsize %s -f mp4 -vf "scale_vaapi=%s"'
     },
     {
         'inputs': '-y -hwaccel cuda -c:v h264_cuvid -hwaccel_output_format cuda',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -acodec copy -bufsize %s -f mp4 -vf scale_cuda=%s'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -acodec copy -bufsize %s -f mp4 -vf "scale_cuda=%s"'
     },
     # 软解硬编
     {
         'inputs': '-y',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -acodec copy -bufsize %s -f mp4 -vf scale=%s'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
     {
         'inputs': '-y -hwaccel_output_format vaapi',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -acodec copy -bufsize %s -f mp4 -vf scale=%s'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
     {
         'inputs': '-y -hwaccel_output_format cuda',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -acodec copy -bufsize %s -f mp4 -vf scale=%s'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
     # 硬解软编
     {
         'inputs': '-y -hwaccel videotoolbox',
-        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
+        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
     {
         'inputs': '-y -hwaccel vaapi -hwaccel_device /dev/dri/renderD128',
-        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
+        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
     {
         'inputs': '-y -hwaccel cuda -c:v h264_cuvid',
-        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
+        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
     # 软解软编
     {
         'inputs': '-y',
-        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf scale=%s'
+        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
     }
 ]
 
@@ -82,6 +82,8 @@ def checkVideoFormat(d):
         if f['track_type'] == 'General':
             if 'format' in f and f['format'] in VIDEO_FORMAT:
                 format = True
+                if not f['format'] == 'MPEG-4':
+                    video = True
         if f['track_type'] == 'Video':
             if (f['height'] > 720 and f['width'] > 1280) or (f['width'] > 720 and f['height'] > 1280):
                 video = True
@@ -101,9 +103,9 @@ def getNewSize(d):
     for f in d['tracks']:
         if f['track_type'] == 'Video':
             if f["width"] > f["height"]:
-                return VIDEO_MAX_WIDTH + ':-1'
+                return "'min("+str(VIDEO_MAX_WIDTH)+",iw)':-1"
             else:
-                return '-1:' + VIDEO_MAX_WIDTH
+                return "-1:" + "'min("+str(VIDEO_MAX_WIDTH)+",ih)'"
 
 
 def fileList(path):
@@ -201,7 +203,7 @@ def checkImageFormat(d):
 def get_size(file):
     # 获取文件大小:MB
     size = os.path.getsize(file)
-    return size / MB
+    return round(size / MB)
 
 
 def get_new_img_name(d):
