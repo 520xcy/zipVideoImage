@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # encoding: utf-8
 
 import os
@@ -18,7 +19,7 @@ MB = 1024 ** 2
 MAX_CONNECTIONS = 2  # 同时转码进程数量
 BASHPATH = os.getcwd()
 VIDEO_FORMAT = ['MPEG-4', 'AVI', 'Matroska']
-VIDEO_BIT = '2500k'
+VIDEO_BIT = '2000k'
 VIDEO_MAX_WIDTH = '1280'
 IMAGE_WIDTH = 1800
 IMAGE_FORMAT = ['JPEG', 'Bitmap', 'GIF', 'PNG']
@@ -94,7 +95,7 @@ def getNewVideoName(d):
     for f in d['tracks']:
         if f['track_type'] == 'General':
             if not FILE_NAME+'_convert_' in str(f['file_name']):
-                if os.path.isfile(os.path.join(f['folder_name'], os.path.splitext(str(f['file_name']))[0])+'.mp4'):
+                if not os.path.splitext(str(f['file_name']))[1].lower() == '.mp4' and os.path.isfile(os.path.join(f['folder_name'], os.path.splitext(str(f['file_name']))[0])+'.mp4'):
                     return os.path.join(f['folder_name'], FILE_NAME+'_convert_'+os.path.splitext(str(f['file_name']))[0]+str(random.randint(0, 1000))+'.mp4')
                 return os.path.join(f['folder_name'], FILE_NAME+'_convert_'+os.path.splitext(str(f['file_name']))[0]+'.mp4')
 
@@ -166,7 +167,7 @@ class zipVideo(threading.Thread):
             writeFile(
                 SUCCESS_LOG, f'{self.src} {o_size}mb => {d_size}mb 耗时{run_time}秒\n\r')
             os.remove(self.src)
-            os.rename(self.dst, os.path.splitext(self.src)[0]+'.mp4')
+            os.rename(self.dst, self.dst.replace(FILE_NAME+'_convert_', ''))
         except Exception as e:
             if os.path.exists(self.dst):
                 os.remove(self.dst)
@@ -210,7 +211,7 @@ def get_new_img_name(d):
     for f in d['tracks']:
         if f['track_type'] == 'General':
             if not FILE_NAME+'_resize_' in str(f['file_name']):
-                if os.path.isfile(os.path.join(f['folder_name'], os.path.splitext(str(f['file_name']))[0])+'.jpg'):
+                if not os.path.splitext(str(f['file_name']))[1].lower() == '.jpg' and os.path.isfile(os.path.join(f['folder_name'], os.path.splitext(str(f['file_name']))[0])+'.jpg'):
                     return os.path.join(f['folder_name'], FILE_NAME+'_resize_'+os.path.splitext(str(f['file_name']))[0]+str(random.randint(0, 1000))+'.jpg')
                 return os.path.join(f['folder_name'], FILE_NAME+'_resize_'+os.path.splitext(str(f['file_name']))[0]+'.jpg')
 
@@ -232,7 +233,7 @@ def zip_img(infile, outfile, kb=1024, step=10, quality=90):
             quality -= step
         d_size = get_size(outfile)
         os.remove(infile)
-        os.rename(outfile, os.path.splitext(infile)[0]+'.jpg')
+        os.rename(outfile, outfile.replace(FILE_NAME+'_resize_', ''))
         return outfile, o_size, d_size
 
 
