@@ -31,6 +31,10 @@ ERROR_LOG = os.path.join(BASHPATH, FILE_NAME+'-error-' +
 FFMPEG_CMD = [
     # 硬编硬解
     {
+        'inputs': '-y -hwaccel qsv -c:v h264_qsv -hwaccel_output_forma qsv',
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_qsv -acodec copy -bufsize %s -f mp4 -vf ""scale_qsv=%s""'
+    },
+    {
         'inputs': '-y -hwaccel videotoolbox',
         'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -acodec copy -bufsize %s -f mp4 -vf ""scale=%s""'
     },
@@ -44,6 +48,10 @@ FFMPEG_CMD = [
     },
     # 软解硬编
     {
+        'inputs': '-y -hwaccel_output_format qsv',
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_qsv -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
+    },
+    {
         'inputs': '-y',
         'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
@@ -56,6 +64,10 @@ FFMPEG_CMD = [
         'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
     # 硬解软编
+    {
+        'inputs': '-y -c:v h264_qsv',
+        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
+    },
     {
         'inputs': '-y -hwaccel videotoolbox',
         'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
@@ -348,4 +360,5 @@ if __name__ == '__main__':
 
     for list in (zipVideo.tlist + zipImg.tlist):
         list.join()
+
 
