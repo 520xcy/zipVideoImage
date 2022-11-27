@@ -176,10 +176,11 @@ class zipVideo(threading.Thread):
         try:
             o_size, d_size, run_time = runFfmpy(
                 self.src, self.dst, self.size)
-            writeFile(
-                SUCCESS_LOG, f'{self.src} {o_size}mb => {d_size}mb 耗时{run_time}秒\n\r')
-            os.remove(self.src)
-            os.rename(self.dst, self.dst.replace(FILE_NAME+'_convert_', ''))
+            if d_size < o_size:    
+                writeFile(
+                    SUCCESS_LOG, f'{self.src} {o_size}mb => {d_size}mb 耗时{run_time}秒\n\r')
+                os.remove(self.src)
+                os.rename(self.dst, self.dst.replace(FILE_NAME+'_convert_', ''))
         except Exception as e:
             if os.path.exists(self.dst):
                 os.remove(self.dst)
