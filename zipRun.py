@@ -31,19 +31,19 @@ ERROR_LOG = os.path.join(BASHPATH, FILE_NAME+'-error-' +
 FFMPEG_CMD = [
     # 硬编硬解
     {
-        'inputs': '-y -hwaccel qsv -c:v h264_qsv -hwaccel_output_forma qsv',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_qsv -acodec copy -bufsize %s -f mp4 -vf ""scale_qsv=%s""'
+        'inputs': '-y -hwaccel qsv -hwaccel_output_format qsv',
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_qsv -acodec copy -bufsize %s -f mp4 -vf "scale_qsv=%s"'
     },
     {
         'inputs': '-y -hwaccel videotoolbox',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -acodec copy -bufsize %s -f mp4 -vf ""scale=%s""'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
     {
         'inputs': '-y -hwaccel vaapi -hwaccel_output_format vaapi -hwaccel_device /dev/dri/renderD128',
         'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -acodec copy -bufsize %s -f mp4 -vf "scale_vaapi=%s"'
     },
     {
-        'inputs': '-y -hwaccel cuda -c:v h264_cuvid -hwaccel_output_format cuda',
+        'inputs': '-y -hwaccel cuda -hwaccel_output_format cuda',
         'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -acodec copy -bufsize %s -f mp4 -vf "scale_cuda=%s"'
     },
     # 软解硬编
@@ -64,22 +64,22 @@ FFMPEG_CMD = [
         'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
     # 硬解软编
-    {
-        'inputs': '-y -c:v h264_qsv',
-        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
-    },
-    {
-        'inputs': '-y -hwaccel videotoolbox',
-        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
-    },
-    {
-        'inputs': '-y -hwaccel vaapi -hwaccel_device /dev/dri/renderD128',
-        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
-    },
-    {
-        'inputs': '-y -hwaccel cuda -c:v h264_cuvid',
-        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
-    },
+    #{
+    #    'inputs': '-y -hwaccel qsv',
+    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale_qsv=%s"'
+    #},
+    #{
+    #    'inputs': '-y -hwaccel videotoolbox',
+    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
+    #},
+    #{
+    #    'inputs': '-y -hwaccel vaapi -hwaccel_device /dev/dri/renderD128',
+    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
+    #},
+    #{
+    #    'inputs': '-y -hwaccel cuda -c:v h264_cuvid',
+    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
+    #},
     # 软解软编
     {
         'inputs': '-y',
