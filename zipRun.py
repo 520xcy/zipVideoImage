@@ -151,8 +151,6 @@ def runFfmpy(src, dst, s):
             return o_size, d_size, round(e_time-s_time)
         except ffmpy.FFRuntimeError:
             continue
-        except Exception as e:
-            raise e
 
     raise RuntimeError('未找到合适的解码方式')
 
@@ -224,18 +222,25 @@ def get_new_img_name(d):
 def zip_img(infile, outfile):
     o_size = get_size(infile)
     s_time = time.time()
-    ff = ffmpy.FFmpeg(
-        inputs={infile: '-y'},
-        outputs={outfile: '-loglevel quiet -q 1 -vf "scale=%s:-1"' %
-                 (IMAGE_WIDTH)}
-    )
-    print('执行', ff.cmd)
-    ff.run()
+    try:
+        ff = ffmpy.FFmpeg(
+            inputs={infile: '-y'},
+            outputs={outfile: '-loglevel quiet -q 1 -vf "scale=%s:-1"' %
+                    (IMAGE_WIDTH)}
+        )
+        print('执行', ff.cmd)
+        ff.run()
+    except ffmpy.FFRuntimeError:
+        pass
+
     e_time = time.time()
     d_size = get_size(outfile)
-    os.remove(infile)
-    os.rename(outfile, outfile.replace(PYTHON_NAME+'_resize_', ''))
-    return o_size, d_size, round(e_time-s_time)
+    if d_size < o_size:
+        os.remove(infile)
+        os.rename(outfile, outfile.replace(PYTHON_NAME+'_resize_', ''))
+        return o_size, d_size, round(e_time-s_time)
+
+    raise RuntimeError('未找到合适的压缩方式')
 
 
 class zipImg(threading.Thread):
