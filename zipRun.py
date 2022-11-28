@@ -3,30 +3,33 @@
 
 import os
 import json
-import sys
 import ffmpy
-from pymediainfo import MediaInfo
 import threading
 import time
-from PIL import Image
 from alive_progress import alive_bar
 import random
 import argparse
 import datetime
+import subprocess
+
 
 GB = 1024 ** 3
 MB = 1024 ** 2
 MAX_CONNECTIONS = 2  # 同时转码进程数量
 BASHPATH = os.getcwd()
-VIDEO_FORMAT = ['MPEG-4', 'AVI', 'Matroska']
+# VIDEO_FORMAT = ['MPEG-4', 'AVI', 'Matroska']
+VIDEO_FORMAT = ['avc', 'msmpeg4v1', 'msmpeg4v2', 'msmpeg4v3', 'mpeg4', '8bps', 'avs', 'bethsoftvid', 'binkvideo', 'bmv_video', 'cdgraphics', 'cdtoons', 'cdxl', 'clearvideo', 'cmv', 'cpia', 'dsicinvideo', 'dvvideo', 'ffv1', 'flic', 'h264', 'hevc', 'hnm4video', 'idcin', 'interplayvideo', 'jv', 'kmvc', 'magicyuv', 'mmvideo', 'motionpixels', 'mpeg1video', 'mpeg2video', 'msvideo1', 'mxpeg', 'paf_video', 'prores', 'qtrle', 'rawvideo', 'rl2', 'roq', 'rpza',
+                'sanm', 'sheervideo', 'smackvideo', 'tgq', 'tgv', 'thp', 'tiertexseqvideo', 'tqi', 'utvideo', 'vmdvideo', 'ws_vqa', 'amv', 'argo', 'cavs', 'flashsv', 'flashsv2', 'flv1', 'gdv', 'indeo4', 'indeo5', 'ipu', 'kgv1', 'mad', 'mobiclip', 'mss2', 'mvc1', 'mvc2', 'nuv', 'prosumer', 'rv10', 'rv20', 'rv30', 'rv40', 'sga', 'simbiosis_imx', 'smvjpeg', 'svq1', 'svq3', 'vc1image', 'vixl', 'vmnc', 'wcmv', 'wmv1', 'wmv2', 'wmv3', 'wmv3image', 'yop', 'zerocodec', 'zmbv']
 VIDEO_BIT = '2000k'
-VIDEO_MAX_WIDTH = '1280'
-IMAGE_WIDTH = 1800
-IMAGE_FORMAT = ['JPEG', 'Bitmap', 'GIF', 'PNG']
-FILE_NAME = os.path.split(__file__)[-1].split('.')[0]
+VIDEO_MAX_WIDTH = 1280
+IMAGE_WIDTH = 1200
+# IMAGE_FORMAT = ['JPEG', 'Bitmap', 'GIF', 'PNG']
+IMAGE_FORMAT = ['mjpegb', 'adpcm_ima_smjpeg', 'alias_pix', 'apng', 'brender_pi', 'dds', 'dpx', 'exr', 'gem', 'pam', 'pbm', 'pcx', 'pfm', 'pgm',
+                'pgmyuv', 'phm', 'png', 'ppm', 'ptx', 'sgi', 'sunrast', 'targa', 'tiff', 'txd', 'vc1image', 'wmv3image', 'xbm', 'xface', 'xpm', 'xwd', 'mjpeg']
+PYTHON_NAME = os.path.split(__file__)[-1].split('.')[0]
 SUCCESS_LOG = os.path.join(
-    BASHPATH, FILE_NAME+'-success-'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.txt')
-ERROR_LOG = os.path.join(BASHPATH, FILE_NAME+'-error-' +
+    BASHPATH, PYTHON_NAME+'-success-'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.txt')
+ERROR_LOG = os.path.join(BASHPATH, PYTHON_NAME+'-error-' +
                          datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.txt')
 FFMPEG_CMD = [
     # 硬编硬解
@@ -64,22 +67,22 @@ FFMPEG_CMD = [
         'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
     # 硬解软编
-    #{
+    # {
     #    'inputs': '-y -hwaccel qsv',
     #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale_qsv=%s"'
-    #},
-    #{
+    # },
+    # {
     #    'inputs': '-y -hwaccel videotoolbox',
     #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
-    #},
-    #{
+    # },
+    # {
     #    'inputs': '-y -hwaccel vaapi -hwaccel_device /dev/dri/renderD128',
     #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
-    #},
-    #{
+    # },
+    # {
     #    'inputs': '-y -hwaccel cuda -c:v h264_cuvid',
     #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
-    #},
+    # },
     # 软解软编
     {
         'inputs': '-y',
@@ -88,37 +91,31 @@ FFMPEG_CMD = [
 ]
 
 
-def checkVideoFormat(d):
-    format = False
-    video = False
-    for f in d['tracks']:
-        if f['track_type'] == 'General':
-            if 'format' in f and f['format'] in VIDEO_FORMAT:
-                format = True
-                if not f['format'] == 'MPEG-4':
-                    video = True
-        if f['track_type'] == 'Video':
-            if (f['height'] > 720 and f['width'] > 1280) or (f['width'] > 720 and f['height'] > 1280):
-                video = True
-    return format and video
+def checkFormat(d):
+    ft = 'unknow'
+    if d['codec_name'] in VIDEO_FORMAT:
+        if d['width'] > VIDEO_MAX_WIDTH or d['height'] > VIDEO_MAX_WIDTH:
+            ft = 'video'
+    if d['codec_name'] in IMAGE_FORMAT:
+        if d['width'] > IMAGE_WIDTH:
+            ft = 'image'
+    return ft
 
 
-def getNewVideoName(d):
-    for f in d['tracks']:
-        if f['track_type'] == 'General':
-            if not FILE_NAME+'_convert_' in str(f['file_name']):
-                if not os.path.splitext(str(f['file_name']))[1].lower() == '.mp4' and os.path.isfile(os.path.join(f['folder_name'], os.path.splitext(str(f['file_name']))[0])+'.mp4'):
-                    return os.path.join(f['folder_name'], FILE_NAME+'_convert_'+os.path.splitext(str(f['file_name']))[0]+str(random.randint(0, 1000))+'.mp4')
-                return os.path.join(f['folder_name'], FILE_NAME+'_convert_'+os.path.splitext(str(f['file_name']))[0]+'.mp4')
+def getNewName(d):
+    file_name = os.path.basename(d)
+    folder_name = os.path.dirname(d)
+    if not PYTHON_NAME+'_convert_' in str(file_name):
+        if not os.path.splitext(str(file_name))[1].lower() == '.mp4' and os.path.isfile(os.path.join(folder_name, os.path.splitext(str(file_name))[0])+'.mp4'):
+            return os.path.join(folder_name, PYTHON_NAME+'_convert_'+os.path.splitext(str(file_name))[0]+str(random.randint(0, 1000))+'.mp4')
+        return os.path.join(folder_name, PYTHON_NAME+'_convert_'+os.path.splitext(str(file_name))[0]+'.mp4')
 
 
 def getNewSize(d):
-    for f in d['tracks']:
-        if f['track_type'] == 'Video':
-            if f["width"] > f["height"]:
-                return "'min("+str(VIDEO_MAX_WIDTH)+",iw)':-1"
-            else:
-                return "-1:" + "'min("+str(VIDEO_MAX_WIDTH)+",ih)'"
+    if d["width"] > d["height"]:
+        return "'min("+str(VIDEO_MAX_WIDTH)+",iw)':-1"
+    else:
+        return "-1:" + "'min("+str(VIDEO_MAX_WIDTH)+",ih)'"
 
 
 def fileList(path):
@@ -176,11 +173,12 @@ class zipVideo(threading.Thread):
         try:
             o_size, d_size, run_time = runFfmpy(
                 self.src, self.dst, self.size)
-            if d_size < o_size:    
+            if d_size < o_size:
                 writeFile(
-                    SUCCESS_LOG, f'{self.src} {o_size}mb => {d_size}mb 耗时{run_time}秒\n\r')
+                    SUCCESS_LOG, f'{self.src} {o_size}mb => {d_size}mb time{run_time}s\n\r')
                 os.remove(self.src)
-                os.rename(self.dst, self.dst.replace(FILE_NAME+'_convert_', ''))
+                os.rename(self.dst, self.dst.replace(
+                    PYTHON_NAME+'_convert_', ''))
         except Exception as e:
             if os.path.exists(self.dst):
                 os.remove(self.dst)
@@ -208,12 +206,6 @@ class zipVideo(threading.Thread):
     newthread = staticmethod(newthread)
 
 
-def checkImageFormat(d):
-    for f in d['tracks']:
-        if f['track_type'] == 'General':
-            return 'format' in f and f['format'] in IMAGE_FORMAT
-
-
 def get_size(file):
     # 获取文件大小:MB
     size = os.path.getsize(file)
@@ -221,33 +213,29 @@ def get_size(file):
 
 
 def get_new_img_name(d):
-    for f in d['tracks']:
-        if f['track_type'] == 'General':
-            if not FILE_NAME+'_resize_' in str(f['file_name']):
-                if not os.path.splitext(str(f['file_name']))[1].lower() == '.jpg' and os.path.isfile(os.path.join(f['folder_name'], os.path.splitext(str(f['file_name']))[0])+'.jpg'):
-                    return os.path.join(f['folder_name'], FILE_NAME+'_resize_'+os.path.splitext(str(f['file_name']))[0]+str(random.randint(0, 1000))+'.jpg')
-                return os.path.join(f['folder_name'], FILE_NAME+'_resize_'+os.path.splitext(str(f['file_name']))[0]+'.jpg')
+    file_name = os.path.basename(d)
+    folder_name = os.path.dirname(d)
+    if not PYTHON_NAME+'_resize_' in str(file_name):
+        if not os.path.splitext(str(file_name))[1].lower() == '.jpg' and os.path.isfile(os.path.join(folder_name, os.path.splitext(str(file_name))[0])+'.jpg'):
+            return os.path.join(folder_name, PYTHON_NAME+'_resize_'+os.path.splitext(str(file_name))[0]+str(random.randint(0, 1000))+'.jpg')
+        return os.path.join(folder_name, PYTHON_NAME+'_resize_'+os.path.splitext(str(file_name))[0]+'.jpg')
 
 
-def zip_img(infile, outfile, kb=1024, step=10, quality=90):
+def zip_img(infile, outfile):
     o_size = get_size(infile)
-    with Image.open(infile) as im:
-        x, y = im.size
-        if x <= IMAGE_WIDTH:
-            return outfile, o_size, o_size
-        y_s = int(y * IMAGE_WIDTH / x)
-        im = im.convert('RGB')
-        im = im.resize((IMAGE_WIDTH, y_s))
-        im.save(outfile, quality=100)
-        while get_size(outfile) > kb:
-            im.save(outfile, quality=quality)
-            if quality - step <= 0:
-                break
-            quality -= step
-        d_size = get_size(outfile)
-        os.remove(infile)
-        os.rename(outfile, outfile.replace(FILE_NAME+'_resize_', ''))
-        return outfile, o_size, d_size
+    s_time = time.time()
+    ff = ffmpy.FFmpeg(
+        inputs={infile: '-y'},
+        outputs={outfile: '-loglevel quiet -q 1 -vf "scale=%s:-1"' %
+                 (IMAGE_WIDTH)}
+    )
+    print('执行', ff.cmd)
+    ff.run()
+    e_time = time.time()
+    d_size = get_size(outfile)
+    os.remove(infile)
+    os.rename(outfile, outfile.replace(PYTHON_NAME+'_resize_', ''))
+    return o_size, d_size, round(e_time-s_time)
 
 
 class zipImg(threading.Thread):
@@ -264,10 +252,10 @@ class zipImg(threading.Thread):
 
     def run(self):
         try:
-            d_filePath, o_size, d_size = zip_img(self.filePath, self.outfile)
+            o_size, d_size, run_time = zip_img(self.filePath, self.outfile)
             if o_size != d_size:
                 writeFile(SUCCESS_LOG,
-                          f'{self.filePath} => {d_filePath} Size: {int(o_size)}mb => {int(d_size)}mb\n\r')
+                          f'{self.filePath} => Size: {int(o_size)}mb => {int(d_size)}mb time{run_time}s\n\r')
         except Exception as e:
             writeFile(ERROR_LOG, f'{self.filePath}: {str(e)}\n\r')
             pass
@@ -299,7 +287,7 @@ if __name__ == '__main__':
                         metavar=(''), help='处理目录的绝对路径')
     parser.add_argument('-vbit', type=str, default=VIDEO_BIT,
                         metavar=(VIDEO_BIT), help='视频码率')
-    parser.add_argument('-vmw', type=str, default=VIDEO_MAX_WIDTH,
+    parser.add_argument('-vmw', type=int, default=VIDEO_MAX_WIDTH,
                         metavar=(VIDEO_MAX_WIDTH), help='视频最长边像素')
     parser.add_argument('-imw', type=int, default=IMAGE_WIDTH,
                         metavar=(IMAGE_WIDTH), help='图片最长边像素')
@@ -324,11 +312,20 @@ if __name__ == '__main__':
         for file in files:
             bar()
             try:
-                media_info = MediaInfo.parse(file)
-                data = json.loads(media_info.to_json())
-                if checkVideoFormat(data) and ziptype != 'image':
+                tup_resp = ffmpy.FFprobe(
+                    inputs={file: None},
+                    global_options=[
+                        '-v', 'quiet',
+                        '-print_format', 'json',
+                        '-show_streams'
+                    ]
+                ).run(stdout=subprocess.PIPE)
+                media_info = json.loads(tup_resp[0].decode('utf-8'))
+                data = media_info['streams'][0]
+                ft = checkFormat(data)
+                if ft == 'video' and ziptype != 'image':
                     size = getNewSize(data)
-                    dst = getNewVideoName(data)
+                    dst = getNewName(file)
                     if not dst:
                         continue
                     zipVideo.lck.acquire()
@@ -339,8 +336,8 @@ if __name__ == '__main__':
                         zipVideo.lck.release()
                     zipVideo.newthread(
                         **{'src': file, 'dst': dst, 'size': size})
-                elif checkImageFormat(data) and ziptype != 'video':
-                    outfile = get_new_img_name(data)
+                elif ft == 'image' and ziptype != 'video':
+                    outfile = get_new_img_name(file)
                     if not outfile:
                         continue
                     zipImg.lck.acquire()
@@ -351,15 +348,14 @@ if __name__ == '__main__':
                     else:
                         zipImg.lck.release()
                     zipImg.newthread(file, outfile)
-                
 
             except KeyboardInterrupt:
                 exit()
             except FileNotFoundError as e:
                 writeFile(ERROR_LOG, f'{file}: {str(e)}\n\r')
                 pass
+            except ffmpy.FFRuntimeError:
+                pass
 
     for list in (zipVideo.tlist + zipImg.tlist):
         list.join()
-
-
