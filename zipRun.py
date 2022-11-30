@@ -15,6 +15,7 @@ import subprocess
 
 GB = 1024 ** 3
 MB = 1024 ** 2
+KB = 1024
 MAX_CONNECTIONS = 2  # 同时转码进程数量
 BASHPATH = os.getcwd()
 # VIDEO_FORMAT = ['MPEG-4', 'AVI', 'Matroska']
@@ -173,7 +174,7 @@ class zipVideo(threading.Thread):
                 self.src, self.dst, self.size)
             if d_size < o_size:
                 writeFile(
-                    SUCCESS_LOG, f'{self.src} {o_size}mb => {d_size}mb time{run_time}s\n\r')
+                    SUCCESS_LOG, f'{self.src} {round(o_size / MB)}mb => {round(o_size / MB)}mb time{run_time}s\n\r')
                 os.remove(self.src)
                 os.rename(self.dst, self.dst.replace(
                     PYTHON_NAME+'_convert_', ''))
@@ -208,8 +209,8 @@ class zipVideo(threading.Thread):
 
 def get_size(file):
     # 获取文件大小:MB
-    size = os.path.getsize(file)
-    return round(size / MB)
+    return os.path.getsize(file)
+     
 
 
 def get_new_img_name(d):
@@ -256,9 +257,10 @@ class zipImg(threading.Thread):
     def run(self):
         try:
             o_size, d_size, run_time = zip_img(self.filePath, self.outfile)
+            
             if d_size < o_size:
-                writeFile(
-                    f'{self.filePath} => Size: {int(o_size)}mb => {int(d_size)}mb time{run_time}s\n\r')
+                writeFile(SUCCESS_LOG, 
+                    f'{self.filePath} => Size: {round(o_size / KB)}mb => {round(d_size / KB)}mb time{str(run_time)}s\n\r')
                 os.remove(self.filePath)
                 os.rename(self.outfile, self.outfile.replace(
                     PYTHON_NAME+'_resize_', ''))
