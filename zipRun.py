@@ -177,6 +177,8 @@ class zipVideo(threading.Thread):
                 os.remove(self.src)
                 os.rename(self.dst, self.dst.replace(
                     PYTHON_NAME+'_convert_', ''))
+            elif os.path.exists(self.dst):
+                    os.remove(self.dst)
         except Exception as e:
             if os.path.exists(self.dst):
                 os.remove(self.dst)
@@ -230,15 +232,11 @@ def zip_img(infile, outfile):
         )
         print('执行', ff.cmd)
         ff.run()
+        e_time = time.time()
+        d_size = get_size(outfile)
+        return o_size, d_size, round(e_time-s_time)
     except ffmpy.FFRuntimeError:
         pass
-
-    e_time = time.time()
-    d_size = get_size(outfile)
-    if d_size < o_size:
-        os.remove(infile)
-        os.rename(outfile, outfile.replace(PYTHON_NAME+'_resize_', ''))
-        return o_size, d_size, round(e_time-s_time)
 
     raise RuntimeError('未找到合适的压缩方式')
 
@@ -258,12 +256,21 @@ class zipImg(threading.Thread):
     def run(self):
         try:
             o_size, d_size, run_time = zip_img(self.filePath, self.outfile)
-            if o_size != d_size:
-                writeFile(SUCCESS_LOG,
-                          f'{self.filePath} => Size: {int(o_size)}mb => {int(d_size)}mb time{run_time}s\n\r')
+            if d_size < o_size:
+                writeFile(
+                    f'{self.filePath} => Size: {int(o_size)}mb => {int(d_size)}mb time{run_time}s\n\r')
+                os.remove(self.filePath)
+                os.rename(self.outfile, self.outfile.replace(
+                    PYTHON_NAME+'_resize_', ''))
+            elif os.path.exists(self.outfile):
+                    os.remove(self.outfile)
         except Exception as e:
-            writeFile(ERROR_LOG, f'{self.filePath}: {str(e)}\n\r')
+            if os.path.exists(self.outfile):
+                os.remove(self.outfile)
+            print('发生错误:', self.filePath, e)
+            writeFile(ERROR_LOG, f'{self.filePath}:{str(e)}\n\r')
             pass
+
 
         # 以下用来将完成的线程移除线程队列
         self.lck.acquire()
