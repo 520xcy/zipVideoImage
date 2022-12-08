@@ -174,7 +174,7 @@ class zipVideo(threading.Thread):
                 self.src, self.dst, self.size)
             if d_size < o_size:
                 writeFile(
-                    SUCCESS_LOG, f'{self.src} {round(o_size / MB)}mb => {round(o_size / MB)}mb time{run_time}s\n\r')
+                    SUCCESS_LOG, f'{self.src} {round(o_size / MB)}mb => {round(d_size / MB)}mb time{run_time}s\n\r')
                 os.remove(self.src)
                 os.rename(self.dst, self.dst.replace(
                     PYTHON_NAME+'_convert_', ''))
