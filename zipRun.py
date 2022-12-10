@@ -95,13 +95,16 @@ FFMPEG_CMD = [
 
 
 def checkFormat(media_info):
-    d = media_info['streams'][0]
     ft = 'unknow'
     ext = os.path.splitext(media_info['format']['filename'])[1].lower()
     if ext in VIDEO_FORMAT:
-        if d['width'] > VIDEO_MAX_WIDTH or d['height'] > VIDEO_MAX_WIDTH:
-            ft = 'video'
+        for d in media_info['streams']:
+            if 'width' in d and 'height' in d:
+                if d['width'] > VIDEO_MAX_WIDTH or d['height'] > VIDEO_MAX_WIDTH:
+                    ft = 'video'
+                    break
     if ext in IMAGE_FORMAT:
+        d = media_info['streams'][0]
         if d['width'] > IMAGE_WIDTH:
             ft = 'image'
     return ft
