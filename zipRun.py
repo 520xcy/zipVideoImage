@@ -19,14 +19,16 @@ KB = 1024
 MAX_CONNECTIONS = 2  # 同时转码进程数量
 BASHPATH = os.getcwd()
 # VIDEO_FORMAT = ['MPEG-4', 'AVI', 'Matroska']
-VIDEO_FORMAT = ['avc', 'msmpeg4v1', 'msmpeg4v2', 'msmpeg4v3', 'mpeg4', '8bps', 'avs', 'bethsoftvid', 'binkvideo', 'bmv_video', 'cdgraphics', 'cdtoons', 'cdxl', 'clearvideo', 'cmv', 'cpia', 'dsicinvideo', 'dvvideo', 'ffv1', 'flic', 'h264', 'hevc', 'hnm4video', 'idcin', 'interplayvideo', 'jv', 'kmvc', 'magicyuv', 'mmvideo', 'motionpixels', 'mpeg1video', 'mpeg2video', 'msvideo1', 'mxpeg', 'paf_video', 'prores', 'qtrle', 'rawvideo', 'rl2', 'roq', 'rpza',
-                'sanm', 'sheervideo', 'smackvideo', 'tgq', 'tgv', 'thp', 'tiertexseqvideo', 'tqi', 'utvideo', 'vmdvideo', 'ws_vqa', 'amv', 'argo', 'cavs', 'flashsv', 'flashsv2', 'flv1', 'gdv', 'indeo4', 'indeo5', 'ipu', 'kgv1', 'mad', 'mobiclip', 'mss2', 'mvc1', 'mvc2', 'nuv', 'prosumer', 'rv10', 'rv20', 'rv30', 'rv40', 'sga', 'simbiosis_imx', 'smvjpeg', 'svq1', 'svq3', 'vc1image', 'vixl', 'vmnc', 'wcmv', 'wmv1', 'wmv2', 'wmv3', 'wmv3image', 'yop', 'zerocodec', 'zmbv']
+# VIDEO_FORMAT = ['avc', 'msmpeg4v1', 'msmpeg4v2', 'msmpeg4v3', 'mpeg4', '8bps', 'avs', 'bethsoftvid', 'binkvideo', 'bmv_video', 'cdgraphics', 'cdtoons', 'cdxl', 'clearvideo', 'cmv', 'cpia', 'dsicinvideo', 'dvvideo', 'ffv1', 'flic', 'h264', 'hevc', 'hnm4video', 'idcin', 'interplayvideo', 'jv', 'kmvc', 'magicyuv', 'mmvideo', 'motionpixels', 'mpeg1video', 'mpeg2video', 'msvideo1', 'mxpeg', 'paf_video', 'prores', 'qtrle', 'rawvideo', 'rl2', 'roq', 'rpza',
+#                'sanm', 'sheervideo', 'smackvideo', 'tgq', 'tgv', 'thp', 'tiertexseqvideo', 'tqi', 'utvideo', 'vmdvideo', 'ws_vqa', 'amv', 'argo', 'cavs', 'flashsv', 'flashsv2', 'flv1', 'gdv', 'indeo4', 'indeo5', 'ipu', 'kgv1', 'mad', 'mobiclip', 'mss2', 'mvc1', 'mvc2', 'nuv', 'prosumer', 'rv10', 'rv20', 'rv30', 'rv40', 'sga', 'simbiosis_imx', 'smvjpeg', 'svq1', 'svq3', 'vc1image', 'vixl', 'vmnc', 'wcmv', 'wmv1', 'wmv2', 'wmv3', 'wmv3image', 'yop', 'zerocodec', 'zmbv']
+VIDEO_FORMAT = ['.avi','.mkv','.mp4','.asf','.mpg','.mpeg','.mov','.wmv','.flv','.swf','.m4v','.ts','.3gp','.f4v']
 VIDEO_BIT = '2000k'
 VIDEO_MAX_WIDTH = 1280
 IMAGE_WIDTH = 1200
 # IMAGE_FORMAT = ['JPEG', 'Bitmap', 'GIF', 'PNG']
-IMAGE_FORMAT = ['mjpegb', 'adpcm_ima_smjpeg', 'alias_pix', 'apng', 'brender_pi', 'dds', 'dpx', 'exr', 'gem', 'pam', 'pbm', 'pcx', 'pfm', 'pgm',
-                'pgmyuv', 'phm', 'png', 'ppm', 'ptx', 'sgi', 'sunrast', 'targa', 'tiff', 'txd', 'vc1image', 'wmv3image', 'xbm', 'xface', 'xpm', 'xwd', 'mjpeg']
+#IMAGE_FORMAT = ['mjpegb', 'adpcm_ima_smjpeg', 'alias_pix', 'apng', 'brender_pi', 'dds', 'dpx', 'exr', 'gem', 'pam', 'pbm', 'pcx', 'pfm', 'pgm',
+#                'pgmyuv', 'phm', 'png', 'ppm', 'ptx', 'sgi', 'sunrast', 'targa', 'tiff', 'txd', 'vc1image', 'wmv3image', 'xbm', 'xface', 'xpm', 'xwd', 'mjpeg']
+IMAGE_FORMAT = ['.bmp','.gif','.png','.jpg','.jpeg','.tif','.tiff']
 PYTHON_NAME = os.path.split(__file__)[-1].split('.')[0]
 SUCCESS_LOG = os.path.join(
     BASHPATH, PYTHON_NAME+'-success-'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.txt')
@@ -36,68 +38,70 @@ FFMPEG_CMD = [
     # 硬编硬解
     {
         'inputs': '-y -hwaccel qsv -hwaccel_output_format qsv',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_qsv -acodec copy -bufsize %s -f mp4 -vf "scale_qsv=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_qsv -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale_qsv=%s"'
     },
     {
         'inputs': '-y -hwaccel videotoolbox',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
     },
     {
         'inputs': '-y -hwaccel vaapi -hwaccel_output_format vaapi -hwaccel_device /dev/dri/renderD128',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -acodec copy -bufsize %s -f mp4 -vf "scale_vaapi=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale_vaapi=%s"'
     },
     {
         'inputs': '-y -hwaccel cuda -hwaccel_output_format cuda',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -acodec copy -bufsize %s -f mp4 -vf "scale_cuda=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale_cuda=%s"'
     },
     # 软解硬编
     {
         'inputs': '-y -hwaccel_output_format qsv',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_qsv -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_qsv -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
     },
     {
         'inputs': '-y',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
     },
     {
         'inputs': '-y -hwaccel_output_format vaapi',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
     },
     {
         'inputs': '-y -hwaccel_output_format cuda',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
     },
     # 硬解软编
     # {
     #    'inputs': '-y -hwaccel qsv',
-    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale_qsv=%s"'
+    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale_qsv=%s"'
     # },
     # {
     #    'inputs': '-y -hwaccel videotoolbox',
-    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
+    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
     # },
     # {
     #    'inputs': '-y -hwaccel vaapi -hwaccel_device /dev/dri/renderD128',
-    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
+    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
     # },
     # {
     #    'inputs': '-y -hwaccel cuda -c:v h264_cuvid',
-    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
+    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
     # },
     # 软解软编
     {
         'inputs': '-y',
-        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -acodec copy -bufsize %s -f mp4 -vf "scale=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
     }
 ]
 
 
-def checkFormat(d):
+def checkFormat(media_info):
+    d = media_info['streams'][0]
     ft = 'unknow'
-    if d['codec_name'] in VIDEO_FORMAT:
+    ext = os.path.splitext(media_info['format']['filename'])[1].lower()
+    if ext in VIDEO_FORMAT:
         if d['width'] > VIDEO_MAX_WIDTH or d['height'] > VIDEO_MAX_WIDTH:
             ft = 'video'
-    if d['codec_name'] in IMAGE_FORMAT:
+    if ext in IMAGE_FORMAT:
         if d['width'] > IMAGE_WIDTH:
             ft = 'image'
     return ft
@@ -331,12 +335,13 @@ if __name__ == '__main__':
                     global_options=[
                         '-v', 'quiet',
                         '-print_format', 'json',
-                        '-show_streams'
+                        '-show_streams',
+                        '-show_format'
                     ]
                 ).run(stdout=subprocess.PIPE)
                 media_info = json.loads(tup_resp[0].decode('utf-8'))
                 data = media_info['streams'][0]
-                ft = checkFormat(data)
+                ft = checkFormat(media_info)
                 if ft == 'video' and ziptype != 'image':
                     size = getNewSize(data)
                     dst = getNewName(file)
