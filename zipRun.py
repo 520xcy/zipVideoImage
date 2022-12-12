@@ -24,6 +24,7 @@ BASHPATH = os.getcwd()
 VIDEO_FORMAT = ['.avi','.mkv','.mp4','.asf','.mpg','.mpeg','.mov','.wmv','.flv','.swf','.m4v','.ts','.3gp','.f4v']
 VIDEO_BIT = '2000k'
 VIDEO_MAX_WIDTH = 1280
+VIDEO_MAX_HEIGHT = 720
 IMAGE_WIDTH = 1200
 # IMAGE_FORMAT = ['JPEG', 'Bitmap', 'GIF', 'PNG']
 #IMAGE_FORMAT = ['mjpegb', 'adpcm_ima_smjpeg', 'alias_pix', 'apng', 'brender_pi', 'dds', 'dpx', 'exr', 'gem', 'pam', 'pbm', 'pcx', 'pfm', 'pgm',
@@ -119,11 +120,14 @@ def getNewName(d):
         return os.path.join(folder_name, PYTHON_NAME+'_convert_'+os.path.splitext(str(file_name))[0]+'.mp4')
 
 
-def getNewSize(d):
-    if d["width"] > d["height"]:
-        return "'min("+str(VIDEO_MAX_WIDTH)+",iw)':-1"
-    else:
-        return "-1:" + "'min("+str(VIDEO_MAX_WIDTH)+",ih)'"
+def getNewSize(media_info):
+    for d in media_info['streams']:
+        if 'width' in d and 'height' in d:
+            if d["width"] > d["height"]:
+                return "'min("+str(VIDEO_MAX_WIDTH)+",iw)':-1"
+            else:
+                return "-1:" + "'min("+str(VIDEO_MAX_WIDTH)+",ih)'"
+
 
 
 def fileList(path):
@@ -148,9 +152,12 @@ def runFfmpy(src, dst, s):
     for run_type in FFMPEG_CMD:
         try:
             s_time = time.time()
+            cmd_src = run_type['inputs']
+            cmd_dst = run_type['outputs'] % (VIDEO_BIT, VIDEO_BIT, s)
+
             ff = ffmpy.FFmpeg(
-                inputs={src: run_type['inputs']},
-                outputs={dst: run_type['outputs'] % (VIDEO_BIT, VIDEO_BIT, s)}
+                inputs={src: cmd_src},
+                outputs={dst: cmd_dst}
             )
             print('执行', ff.cmd)
             ff.run()
@@ -267,7 +274,7 @@ class zipImg(threading.Thread):
             
             if d_size < o_size:
                 writeFile(SUCCESS_LOG, 
-                    f'{self.filePath} => Size: {round(o_size / KB)}mb => {round(d_size / KB)}mb time{str(run_time)}s\n\r')
+                    f'{self.filePath} => Size: {round(o_size / KB)}kb => {round(d_size / KB)}kb time{str(run_time)}s\n\r')
                 os.remove(self.filePath)
                 os.rename(self.outfile, self.outfile.replace(
                     PYTHON_NAME+'_resize_', ''))
@@ -343,12 +350,11 @@ if __name__ == '__main__':
                     ]
                 ).run(stdout=subprocess.PIPE)
                 media_info = json.loads(tup_resp[0].decode('utf-8'))
-                data = media_info['streams'][0]
                 ft = checkFormat(media_info)
                 if ft == 'video' and ziptype != 'image':
-                    size = getNewSize(data)
+                    size = getNewSize(media_info)
                     dst = getNewName(file)
-                    if not dst:
+                    if not dst or not size:
                         continue
                     zipVideo.lck.acquire()
                     if len(zipVideo.tlist) >= zipVideo.maxthreads:
@@ -378,6 +384,9 @@ if __name__ == '__main__':
                 pass
             except ffmpy.FFRuntimeError:
                 pass
+            except Exception as e:
+                writeFile(ERROR_LOG, f'{file}: {str(e)}\n\r')
+                raise
 
     for list in (zipVideo.tlist + zipImg.tlist):
         list.join()
