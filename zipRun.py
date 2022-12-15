@@ -22,7 +22,7 @@ BASHPATH = os.getcwd()
 # VIDEO_FORMAT = ['avc', 'msmpeg4v1', 'msmpeg4v2', 'msmpeg4v3', 'mpeg4', '8bps', 'avs', 'bethsoftvid', 'binkvideo', 'bmv_video', 'cdgraphics', 'cdtoons', 'cdxl', 'clearvideo', 'cmv', 'cpia', 'dsicinvideo', 'dvvideo', 'ffv1', 'flic', 'h264', 'hevc', 'hnm4video', 'idcin', 'interplayvideo', 'jv', 'kmvc', 'magicyuv', 'mmvideo', 'motionpixels', 'mpeg1video', 'mpeg2video', 'msvideo1', 'mxpeg', 'paf_video', 'prores', 'qtrle', 'rawvideo', 'rl2', 'roq', 'rpza',
 #                'sanm', 'sheervideo', 'smackvideo', 'tgq', 'tgv', 'thp', 'tiertexseqvideo', 'tqi', 'utvideo', 'vmdvideo', 'ws_vqa', 'amv', 'argo', 'cavs', 'flashsv', 'flashsv2', 'flv1', 'gdv', 'indeo4', 'indeo5', 'ipu', 'kgv1', 'mad', 'mobiclip', 'mss2', 'mvc1', 'mvc2', 'nuv', 'prosumer', 'rv10', 'rv20', 'rv30', 'rv40', 'sga', 'simbiosis_imx', 'smvjpeg', 'svq1', 'svq3', 'vc1image', 'vixl', 'vmnc', 'wcmv', 'wmv1', 'wmv2', 'wmv3', 'wmv3image', 'yop', 'zerocodec', 'zmbv']
 VIDEO_FORMAT = ['.avi','.mkv','.mp4','.asf','.mpg','.mpeg','.mov','.wmv','.flv','.swf','.m4v','.ts','.3gp','.f4v']
-VIDEO_BIT = '2000k'
+VIDEO_BIT = '2048000'
 VIDEO_MAX_WIDTH = 1280
 VIDEO_MAX_HEIGHT = 720
 IMAGE_WIDTH = 1200
@@ -102,6 +102,8 @@ def checkFormat(media_info):
         for d in media_info['streams']:
             if 'width' in d and 'height' in d:
                 if d['width'] > VIDEO_MAX_WIDTH or d['height'] > VIDEO_MAX_WIDTH:
+                    if 'bit_rate' in d and int(d['bit_rate']) < int(VIDEO_BIT):
+                        break
                     ft = 'video'
                     break
     if ext in IMAGE_FORMAT:
