@@ -43,7 +43,7 @@ FFMPEG_CMD = [
     },
     {
         'inputs': '-y -hwaccel videotoolbox',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -c:a aac -bufsize %s -f mp4 -vf "scale=%s"'
     },
     {
         'inputs': '-y -hwaccel vaapi -hwaccel_output_format vaapi -hwaccel_device /dev/dri/renderD128',
@@ -60,7 +60,7 @@ FFMPEG_CMD = [
     },
     {
         'inputs': '-y',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -c:a aac -bufsize %s -f mp4 -vf "scale=%s"'
     },
     {
         'inputs': '-y -hwaccel_output_format vaapi',
@@ -90,7 +90,7 @@ FFMPEG_CMD = [
     # 软解软编
     {
         'inputs': '-y',
-        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a aac -bufsize %s -f mp4 -vf "scale=%s"'
     }
 ]
 
@@ -126,9 +126,17 @@ def getNewSize(media_info):
     for d in media_info['streams']:
         if 'width' in d and 'height' in d:
             if d["width"] > d["height"]:
-                return "'min("+str(VIDEO_MAX_WIDTH)+",iw)':-1"
+                if d["width"]>VIDEO_MAX_WIDTH:
+                    height = int(VIDEO_MAX_WIDTH*d["height"]/d["width"])
+                    height += 16-height%16
+                    return str(VIDEO_MAX_WIDTH)+":"+str(height)
+                    return "'min("+str(VIDEO_MAX_WIDTH)+",iw)':-1"
             else:
-                return "-1:" + "'min("+str(VIDEO_MAX_WIDTH)+",ih)'"
+                if d["height"]>VIDEO_MAX_WIDTH:
+                    width = int(VIDEO_MAX_WIDTH*d["width"]/d["height"])
+                    width += 16-width%16
+                    return str(width)+":"+str(VIDEO_MAX_WIDTH)
+                    return "-1:" + "'min("+str(VIDEO_MAX_WIDTH)+",ih)'"
 
 
 
