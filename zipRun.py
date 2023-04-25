@@ -21,15 +21,16 @@ BASHPATH = os.getcwd()
 # VIDEO_FORMAT = ['MPEG-4', 'AVI', 'Matroska']
 # VIDEO_FORMAT = ['avc', 'msmpeg4v1', 'msmpeg4v2', 'msmpeg4v3', 'mpeg4', '8bps', 'avs', 'bethsoftvid', 'binkvideo', 'bmv_video', 'cdgraphics', 'cdtoons', 'cdxl', 'clearvideo', 'cmv', 'cpia', 'dsicinvideo', 'dvvideo', 'ffv1', 'flic', 'h264', 'hevc', 'hnm4video', 'idcin', 'interplayvideo', 'jv', 'kmvc', 'magicyuv', 'mmvideo', 'motionpixels', 'mpeg1video', 'mpeg2video', 'msvideo1', 'mxpeg', 'paf_video', 'prores', 'qtrle', 'rawvideo', 'rl2', 'roq', 'rpza',
 #                'sanm', 'sheervideo', 'smackvideo', 'tgq', 'tgv', 'thp', 'tiertexseqvideo', 'tqi', 'utvideo', 'vmdvideo', 'ws_vqa', 'amv', 'argo', 'cavs', 'flashsv', 'flashsv2', 'flv1', 'gdv', 'indeo4', 'indeo5', 'ipu', 'kgv1', 'mad', 'mobiclip', 'mss2', 'mvc1', 'mvc2', 'nuv', 'prosumer', 'rv10', 'rv20', 'rv30', 'rv40', 'sga', 'simbiosis_imx', 'smvjpeg', 'svq1', 'svq3', 'vc1image', 'vixl', 'vmnc', 'wcmv', 'wmv1', 'wmv2', 'wmv3', 'wmv3image', 'yop', 'zerocodec', 'zmbv']
-VIDEO_FORMAT = ['.avi','.mkv','.mp4','.asf','.mpg','.mpeg','.mov','.wmv','.flv','.swf','.m4v','.ts','.3gp','.f4v']
+VIDEO_FORMAT = ['.avi', '.mkv', '.mp4', '.asf', '.mpg', '.mpeg',
+                '.mov', '.wmv', '.flv', '.swf', '.m4v', '.ts', '.3gp', '.f4v']
 VIDEO_BIT = '2048000'
 VIDEO_MAX_WIDTH = 1280
 VIDEO_MAX_HEIGHT = 720
 IMAGE_WIDTH = 1200
 # IMAGE_FORMAT = ['JPEG', 'Bitmap', 'GIF', 'PNG']
-#IMAGE_FORMAT = ['mjpegb', 'adpcm_ima_smjpeg', 'alias_pix', 'apng', 'brender_pi', 'dds', 'dpx', 'exr', 'gem', 'pam', 'pbm', 'pcx', 'pfm', 'pgm',
+# IMAGE_FORMAT = ['mjpegb', 'adpcm_ima_smjpeg', 'alias_pix', 'apng', 'brender_pi', 'dds', 'dpx', 'exr', 'gem', 'pam', 'pbm', 'pcx', 'pfm', 'pgm',
 #                'pgmyuv', 'phm', 'png', 'ppm', 'ptx', 'sgi', 'sunrast', 'targa', 'tiff', 'txd', 'vc1image', 'wmv3image', 'xbm', 'xface', 'xpm', 'xwd', 'mjpeg']
-IMAGE_FORMAT = ['.bmp','.gif','.png','.jpg','.jpeg','.tif','.tiff']
+IMAGE_FORMAT = ['.bmp', '.gif', '.png', '.jpg', '.jpeg', '.tif', '.tiff']
 PYTHON_NAME = os.path.split(__file__)[-1].split('.')[0]
 SUCCESS_LOG = os.path.join(
     BASHPATH, PYTHON_NAME+'-success-'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.txt')
@@ -126,18 +127,19 @@ def getNewSize(media_info):
     for d in media_info['streams']:
         if 'width' in d and 'height' in d:
             if d["width"] > d["height"]:
-                if d["width"]>VIDEO_MAX_WIDTH:
-                    height = int(VIDEO_MAX_WIDTH*d["height"]/d["width"])
-                    height += 16-height%16
-                    return str(VIDEO_MAX_WIDTH)+":"+str(height)
-                    return "'min("+str(VIDEO_MAX_WIDTH)+",iw)':-1"
-            else:
-                if d["height"]>VIDEO_MAX_WIDTH:
-                    width = int(VIDEO_MAX_WIDTH*d["width"]/d["height"])
-                    width += 16-width%16
-                    return str(width)+":"+str(VIDEO_MAX_WIDTH)
-                    return "-1:" + "'min("+str(VIDEO_MAX_WIDTH)+",ih)'"
+                if d["width"] > VIDEO_MAX_WIDTH:
+                    return str(VIDEO_MAX_WIDTH)+":trunc(ow/a/16)*16"
 
+                    height = int(VIDEO_MAX_WIDTH*d["height"]/d["width"])
+                    height += 16-height % 16
+                    return str(VIDEO_MAX_WIDTH)+":"+str(height)
+            else:
+                if d["height"] > VIDEO_MAX_WIDTH:
+                    return "trunc(oh*a/16)*16:" + str(VIDEO_MAX_WIDTH)
+
+                    width = int(VIDEO_MAX_WIDTH*d["width"]/d["height"])
+                    width += 16-width % 16
+                    return str(width)+":"+str(VIDEO_MAX_WIDTH)
 
 
 def fileList(path):
@@ -203,7 +205,7 @@ class zipVideo(threading.Thread):
                 os.rename(self.dst, self.dst.replace(
                     PYTHON_NAME+'_convert_', ''))
             elif os.path.exists(self.dst):
-                    os.remove(self.dst)
+                os.remove(self.dst)
         except Exception as e:
             if os.path.exists(self.dst):
                 os.remove(self.dst)
@@ -234,7 +236,6 @@ class zipVideo(threading.Thread):
 def get_size(file):
     # 获取文件大小:MB
     return os.path.getsize(file)
-     
 
 
 def get_new_img_name(d):
@@ -253,7 +254,7 @@ def zip_img(infile, outfile):
         ff = ffmpy.FFmpeg(
             inputs={infile: '-y'},
             outputs={outfile: '-loglevel quiet -q 1 -vf "scale=%s:-1"' %
-                    (IMAGE_WIDTH)}
+                     (IMAGE_WIDTH)}
         )
         print('执行', ff.cmd)
         ff.run()
@@ -281,22 +282,21 @@ class zipImg(threading.Thread):
     def run(self):
         try:
             o_size, d_size, run_time = zip_img(self.filePath, self.outfile)
-            
+
             if d_size < o_size:
-                writeFile(SUCCESS_LOG, 
-                    f'{self.filePath} => Size: {round(o_size / KB)}kb => {round(d_size / KB)}kb time{str(run_time)}s\n\r')
+                writeFile(SUCCESS_LOG,
+                          f'{self.filePath} => Size: {round(o_size / KB)}kb => {round(d_size / KB)}kb time{str(run_time)}s\n\r')
                 os.remove(self.filePath)
                 os.rename(self.outfile, self.outfile.replace(
                     PYTHON_NAME+'_resize_', ''))
             elif os.path.exists(self.outfile):
-                    os.remove(self.outfile)
+                os.remove(self.outfile)
         except Exception as e:
             if os.path.exists(self.outfile):
                 os.remove(self.outfile)
             print('发生错误:', self.filePath, e)
             writeFile(ERROR_LOG, f'{self.filePath}:{str(e)}\n\r')
             pass
-
 
         # 以下用来将完成的线程移除线程队列
         self.lck.acquire()
