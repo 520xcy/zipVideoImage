@@ -27,6 +27,7 @@ VIDEO_BIT = '2048000'
 VIDEO_MAX_WIDTH = 1280
 VIDEO_MAX_HEIGHT = 720
 IMAGE_WIDTH = 1200
+S_INDEX = 0
 # IMAGE_FORMAT = ['JPEG', 'Bitmap', 'GIF', 'PNG']
 # IMAGE_FORMAT = ['mjpegb', 'adpcm_ima_smjpeg', 'alias_pix', 'apng', 'brender_pi', 'dds', 'dpx', 'exr', 'gem', 'pam', 'pbm', 'pcx', 'pfm', 'pgm',
 #                'pgmyuv', 'phm', 'png', 'ppm', 'ptx', 'sgi', 'sunrast', 'targa', 'tiff', 'txd', 'vc1image', 'wmv3image', 'xbm', 'xface', 'xpm', 'xwd', 'mjpeg']
@@ -40,58 +41,58 @@ FFMPEG_CMD = [
     # 硬编硬解
     {
         'inputs': '-y -hwaccel qsv -hwaccel_output_format qsv',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_qsv -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale_qsv=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_qsv -c:a copy -bufsize %s -f mp4 -vf "scale_qsv=%s"'
     },
     {
         'inputs': '-y -hwaccel videotoolbox',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -c:a aac -bufsize %s -f mp4 -vf "scale=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -c:a copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
     {
         'inputs': '-y -hwaccel vaapi -hwaccel_output_format vaapi -hwaccel_device /dev/dri/renderD128',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale_vaapi=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -c:a copy -bufsize %s -f mp4 -vf "scale_vaapi=%s"'
     },
     {
         'inputs': '-y -hwaccel cuda -hwaccel_output_format cuda',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale_cuda=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -c:a copy -bufsize %s -f mp4 -vf "scale_cuda=%s"'
     },
     # 软解硬编
     {
         'inputs': '-y -hwaccel_output_format qsv',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_qsv -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_qsv -c:a copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
     {
         'inputs': '-y',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -c:a aac -bufsize %s -f mp4 -vf "scale=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_videotoolbox -c:a copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
     {
         'inputs': '-y -hwaccel_output_format vaapi',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_vaapi -c:a copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
     {
         'inputs': '-y -hwaccel_output_format cuda',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_nvenc -c:a copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
     # 硬解软编
     # {
     #    'inputs': '-y -hwaccel qsv',
-    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale_qsv=%s"'
+    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a copy -bufsize %s -f mp4 -vf "scale_qsv=%s"'
     # },
     # {
     #    'inputs': '-y -hwaccel videotoolbox',
-    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
+    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a copy -bufsize %s -f mp4 -vf "scale=%s"'
     # },
     # {
     #    'inputs': '-y -hwaccel vaapi -hwaccel_device /dev/dri/renderD128',
-    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
+    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a copy -bufsize %s -f mp4 -vf "scale=%s"'
     # },
     # {
     #    'inputs': '-y -hwaccel cuda -c:v h264_cuvid',
-    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a libfdk_aac -bufsize %s -f mp4 -vf "scale=%s"'
+    #    'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a copy -bufsize %s -f mp4 -vf "scale=%s"'
     # },
     # 软解软编
     {
         'inputs': '-y',
-        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a aac -bufsize %s -f mp4 -vf "scale=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v libx264 -c:a copy -bufsize %s -f mp4 -vf "scale=%s"'
     }
 ]
 
@@ -329,6 +330,8 @@ if __name__ == '__main__':
                         metavar=(VIDEO_MAX_WIDTH), help='视频最长边像素')
     parser.add_argument('-imw', type=int, default=IMAGE_WIDTH,
                         metavar=(IMAGE_WIDTH), help='图片最长边像素')
+    parser.add_argument('-s', type=int, default=S_INDEX,
+                        metavar=(S_INDEX), help='开始处理文件索引')
     args = parser.parse_args()
     if args.type in ['', 'video', 'image']:
         ziptype = args.type
@@ -342,13 +345,18 @@ if __name__ == '__main__':
     VIDEO_BIT = args.vbit
     VIDEO_MAX_WIDTH = args.vmw
     IMAGE_WIDTH = args.imw
+    S_INDEX = args.s
     pool_sema = threading.Semaphore(MAX_CONNECTIONS*2)
     files = fileList(path)
     count = len(files)
     start = time.perf_counter()
     with alive_bar(len(files)) as bar:
-        for file in files:
+        for index in range(0, count):
             bar()
+            if index < S_INDEX - 1:
+                continue
+            file = files[index]
+            print(index,file)
             try:
                 tup_resp = ffmpy.FFprobe(
                     inputs={file: None},
