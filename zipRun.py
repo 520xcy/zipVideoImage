@@ -4,7 +4,7 @@
 import os
 import json
 import ffmpy
-import threading
+import concurrent.futures
 import time
 from alive_progress import alive_bar
 import random
@@ -184,136 +184,25 @@ def runFfmpy(src, dst, s):
     raise RuntimeError('未找到合适的解码方式')
 
 
-class zipVideo(threading.Thread):
-    tlist = []  # 用来存储队列的线程
-    maxthreads = MAX_CONNECTIONS
-    evnt = threading.Event()  # 用事件来让超过最大线程设置的并发程序等待
-    lck = threading.Lock()  # 线程锁
-
-    def __init__(self, index, src, dst, size):
-        threading.Thread.__init__(self)
-        self.src = src
-        self.dst = dst
-        self.size = size
-        self.index = index
-
-    def run(self):
-        try:
-            o_size, d_size, run_time = runFfmpy(
-                self.src, self.dst, self.size)
-            if d_size < o_size:
-                writeFile(
-                    SUCCESS_LOG, f'{self.index}: {self.src} {round(o_size / MB)}mb => {round(d_size / MB)}mb time{run_time}s\n\r')
-                os.remove(self.src)
-                os.rename(self.dst, self.dst.replace(
-                    PYTHON_NAME+'_convert_', ''))
-            elif os.path.exists(self.dst):
-                os.remove(self.dst)
-        except Exception as e:
-            if os.path.exists(self.dst):
-                os.remove(self.dst)
-            print('发生错误:', self.src, e)
-            writeFile(ERROR_LOG,
-                      f'{self.index}: {self.src}:{str(e)}\n\r')
-            pass
-
-        finally:
-            # 以下用来将完成的线程移除线程队列
-            self.lck.acquire()
-            self.tlist.remove(self)
-            # 如果移除此完成的队列线程数刚好达到99，则说明有线程在等待执行，那么我们释放event，让等待事件执行
-            if len(self.tlist) == self.maxthreads-1:
-                self.evnt.set()
-                self.evnt.clear()
-            self.lck.release()
-
-    def newthread(index, src, dst, size):
-        zipVideo.lck.acquire()  # 上锁
-        sc = zipVideo(index, src, dst, size)
-        zipVideo.tlist.append(sc)
-        zipVideo.lck.release()  # 解锁
-        sc.start()
-    # 将新线程方法定义为静态变量，供调用
-    newthread = staticmethod(newthread)
-
-
-class fileInfo(threading.Thread):
-    tlist = []  # 用来存储队列的线程
-    maxthreads = MAX_CONNECTIONS
-    evnt = threading.Event()  # 用事件来让超过最大线程设置的并发程序等待
-    lck = threading.Lock()  # 线程锁
-
-    def __init__(self, src):
-        threading.Thread.__init__(self)
-        self.src = src
-
-    def run(self):
-        try:
-            tup_resp = ffmpy.FFprobe(
-                inputs={self.src: None},
-                global_options=[
-                    '-v', 'quiet',
-                    '-print_format', 'json',
-                    '-show_streams',
-                    '-show_format'
-                ]
-            ).run(stdout=subprocess.PIPE)
-            media_info = json.loads(tup_resp[0].decode('utf-8'))
-            ft = checkFormat(media_info)
-            if ft == 'video' and ziptype != 'image':
-                size = getNewSize(media_info)
-                dst = getNewName(file)
-                if dst and size:
-                    zipVideo.lck.acquire()
-                    if len(zipVideo.tlist) >= zipVideo.maxthreads:
-                        zipVideo.lck.release()
-                        zipVideo.evnt.wait()  # zipVideo.evnt.set()遇到set事件则等待结束
-                    else:
-                        zipVideo.lck.release()
-                    zipVideo.newthread(
-                        **{'index': index, 'src': file, 'dst': dst, 'size': size})
-            elif ft == 'image' and ziptype != 'video':
-                outfile = get_new_img_name(file)
-                if outfile:
-                    zipImg.lck.acquire()
-                    # 如果目前线程队列超过了设定的上线则等待。
-                    if len(zipImg.tlist) >= zipImg.maxthreads:
-                        zipImg.lck.release()
-                        zipImg.evnt.wait()  # zipImg.evnt.set()遇到set事件则等待结束
-                    else:
-                        zipImg.lck.release()
-                    zipImg.newthread(index, file, outfile)
-
-        except KeyboardInterrupt:
-            exit()
-        except FileNotFoundError as e:
-            writeFile(ERROR_LOG, f'{file}: {str(e)}\n\r')
-            pass
-        except ffmpy.FFRuntimeError:
-            pass
-        except Exception as e:
-            writeFile(ERROR_LOG, f'{file}: {str(e)}\n\r')
-            pass
-
-        finally:
-            # 以下用来将完成的线程移除线程队列
-            self.lck.acquire()
-            self.tlist.remove(self)
-            # 如果移除此完成的队列线程数刚好达到99，则说明有线程在等待执行，那么我们释放event，让等待事件执行
-            if len(self.tlist) == self.maxthreads-1:
-                self.evnt.set()
-                self.evnt.clear()
-            self.lck.release()
-
-    def newthread(src):
-        fileInfo.lck.acquire()  # 上锁
-        sc = fileInfo(src)
-        fileInfo.tlist.append(sc)
-        fileInfo.lck.release()  # 解锁
-        sc.start()
-    # 将新线程方法定义为静态变量，供调用
-    newthread = staticmethod(newthread)
-
+def zipVideo(index, src, dst, size):
+    try:
+        o_size, d_size, run_time = runFfmpy(
+            src, dst, size)
+        if d_size < o_size:
+            writeFile(
+                SUCCESS_LOG, f'{index}: {src} {round(o_size / MB)}mb => {round(d_size / MB)}mb time{run_time}s\n\r')
+            os.remove(src)
+            os.rename(dst, dst.replace(
+                PYTHON_NAME+'_convert_', ''))
+        elif os.path.exists(dst):
+            os.remove(dst)
+    except Exception as e:
+        if os.path.exists(dst):
+            os.remove(dst)
+        print('发生错误:', src, e)
+        writeFile(ERROR_LOG,
+                  f'{index}: {src}:{str(e)}\n\r')
+        pass
 
 def get_size(file):
     # 获取文件大小:MB
@@ -349,58 +238,63 @@ def zip_img(infile, outfile):
     raise RuntimeError('未找到合适的压缩方式')
 
 
-class zipImg(threading.Thread):
-    tlist = []  # 用来存储队列的线程
-    # int(sys.argv[2])最大的并发数量，此处我设置为100，测试下系统最大支持1000多个
-    maxthreads = MAX_CONNECTIONS
-    evnt = threading.Event()  # 用事件来让超过最大线程设置的并发程序等待
-    lck = threading.Lock()  # 线程锁
+def zipImg(index, filePath, outfile):
+    try:
+        o_size, d_size, run_time = zip_img(filePath, outfile)
+        if d_size < o_size:
+            writeFile(SUCCESS_LOG,
+                      f'{index}: {filePath} => Size: {round(o_size / KB)}kb => {round(d_size / KB)}kb time{str(run_time)}s\n\r')
+            os.remove(filePath)
+            os.rename(outfile, outfile.replace(
+                PYTHON_NAME+'_resize_', ''))
+        elif os.path.exists(outfile):
+            os.remove(outfile)
+    except Exception as e:
+        if os.path.exists(outfile):
+            os.remove(outfile)
+        print('发生错误:', filePath, e)
+        writeFile(
+            ERROR_LOG, f'{index}: {filePath} => {str(e)}\n\r')
+        pass
 
-    def __init__(self, index, filePath, outfile):
-        threading.Thread.__init__(self)
-        self.filePath = filePath
-        self.outfile = outfile
-        self.index = index
 
-    def run(self):
-        try:
-            o_size, d_size, run_time = zip_img(self.filePath, self.outfile)
+def worker(file,bar):
+    
+    try:
+    
+        tup_resp = ffmpy.FFprobe(
+            inputs={file: None},
+            global_options=[
+                '-v', 'quiet',
+                '-print_format', 'json',
+                '-show_streams',
+                '-show_format'
+            ]
+        ).run(stdout=subprocess.PIPE)
+        media_info = json.loads(tup_resp[0].decode('utf-8'))
+        ft = checkFormat(media_info)
+        if ft == 'video' and ziptype != 'image':
+            size = getNewSize(media_info)
+            dst = getNewName(file)
+            if dst and size:
+                zipVideo(
+                    **{'index': index, 'src': file, 'dst': dst, 'size': size})
+        elif ft == 'image' and ziptype != 'video':
+            outfile = get_new_img_name(file)
+            if outfile:
+                zipImg(index, file, outfile)
 
-            if d_size < o_size:
-                writeFile(SUCCESS_LOG,
-                          f'{self.index}: {self.filePath} => Size: {round(o_size / KB)}kb => {round(d_size / KB)}kb time{str(run_time)}s\n\r')
-                os.remove(self.filePath)
-                os.rename(self.outfile, self.outfile.replace(
-                    PYTHON_NAME+'_resize_', ''))
-            elif os.path.exists(self.outfile):
-                os.remove(self.outfile)
-        except Exception as e:
-            if os.path.exists(self.outfile):
-                os.remove(self.outfile)
-            print('发生错误:', self.filePath, e)
-            writeFile(
-                ERROR_LOG, f'{self.index}: {self.filePath} => {str(e)}\n\r')
-            pass
-
-        finally:
-            # 以下用来将完成的线程移除线程队列
-            self.lck.acquire()
-            self.tlist.remove(self)
-            # 如果移除此完成的队列线程数刚好达到99，则说明有线程在等待执行，那么我们释放event，让等待事件执行
-            if len(self.tlist) == self.maxthreads-1:
-                self.evnt.set()
-                self.evnt.clear()
-            self.lck.release()
-
-    def newthread(index, filePath, outfile):
-        zipImg.lck.acquire()  # 上锁
-        sc = zipImg(index, filePath, outfile)
-        zipImg.tlist.append(sc)
-        zipImg.lck.release()  # 解锁
-        sc.start()
-    # 将新线程方法定义为静态变量，供调用
-    newthread = staticmethod(newthread)
-
+    except KeyboardInterrupt:
+        exit()
+    except FileNotFoundError as e:
+        writeFile(ERROR_LOG, f'{file}: {str(e)}\n\r')
+        pass
+    except ffmpy.FFRuntimeError:
+        pass
+    except Exception as e:
+        writeFile(ERROR_LOG, f'{file}: {str(e)}\n\r')
+        pass
+    bar()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='自动压缩图片和视频文件')
@@ -433,42 +327,16 @@ if __name__ == '__main__':
     IMAGE_WIDTH = args.imw
     S_INDEX = args.s
     MAX_CONNECTIONS = args.c
-    pool_sema = threading.Semaphore(MAX_CONNECTIONS*2)
+    
     files = fileList(path)
     files.sort()
     count = len(files)
-    start = time.perf_counter()
-    with alive_bar(len(files)) as bar:
-        for index in range(0, count):
-
-            if index < S_INDEX - 1:
-                continue
-            file = files[index]
-
-            # tup_resp = ffmpy.FFprobe(
-            #     inputs={file: None},
-            #     global_options=[
-            #         '-v', 'quiet',
-            #         '-print_format', 'json',
-            #         '-show_streams',
-            #         '-show_format'
-            #     ]
-            # ).run(stdout=subprocess.PIPE)
-            # media_info = json.loads(tup_resp[0].decode('utf-8'))
-            # ft = checkFormat(media_info)
-
-            fileInfo.lck.acquire()
-            if len(fileInfo.tlist) >= fileInfo.maxthreads:
-                fileInfo.lck.release()
-                fileInfo.evnt.wait()  # fileInfo.evnt.set()遇到set事件则等待结束
-            else:
-                fileInfo.lck.release()
-            fileInfo.newthread(file)
-
-            bar()
-
-    for tlist in fileInfo.tlist:
-        tlist.join()
-
-    for tlist in (zipVideo.tlist + zipImg.tlist):
-        tlist.join()
+ 
+    with alive_bar(count) as bar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONNECTIONS) as executor:
+          for index in range(0, count):
+              if index < S_INDEX - 1:
+                  bar()
+                  continue
+              file = files[index]
+              executor.submit(worker, file, bar)
