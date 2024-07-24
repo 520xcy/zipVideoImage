@@ -416,6 +416,8 @@ if __name__ == '__main__':
                         metavar=(IMAGE_WIDTH), help='图片最长边像素')
     parser.add_argument('-s', type=int, default=S_INDEX,
                         metavar=(S_INDEX), help='开始处理文件索引')
+    parser.add_argument('-c', type=int, default=MAX_CONNECTIONS,
+                        metavar=(MAX_CONNECTIONS), help='线程数量')
     args = parser.parse_args()
     if args.type in ['', 'video', 'image']:
         ziptype = args.type
@@ -430,6 +432,7 @@ if __name__ == '__main__':
     VIDEO_MAX_WIDTH = args.vmw
     IMAGE_WIDTH = args.imw
     S_INDEX = args.s
+    MAX_CONNECTIONS = args.c
     pool_sema = threading.Semaphore(MAX_CONNECTIONS*2)
     files = fileList(path)
     files.sort()
