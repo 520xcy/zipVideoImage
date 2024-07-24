@@ -41,7 +41,7 @@ FFMPEG_CMD = [
     # 硬编硬解
     {
         'inputs': '-y -hwaccel qsv -hwaccel_output_format qsv',
-        'outputs': '-loglevel quiet -b:v %s -c:v h264_qsv -c:a copy -bufsize %s -f mp4 -vf "scale_qsv=%s"'
+        'outputs': '-loglevel quiet -b:v %s -c:v h264_qsv -c:a copy -bufsize %s -f mp4 -vf "scale=%s"'
     },
     {
         'inputs': '-y -hwaccel videotoolbox',
