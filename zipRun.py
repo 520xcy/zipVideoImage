@@ -17,7 +17,7 @@ import math
 GB = 1024 ** 3
 MB = 1024 ** 2
 KB = 1024
-MAX_CONNECTIONS = math.ceil(psutil.cpu_count()/2) # 同时转码进程数量
+MAX_CONNECTIONS = math.ceil(psutil.cpu_count()) # 同时转码进程数量
 BASHPATH = os.getcwd()
 # VIDEO_FORMAT = ['MPEG-4', 'AVI', 'Matroska']
 # VIDEO_FORMAT = ['avc', 'msmpeg4v1', 'msmpeg4v2', 'msmpeg4v3', 'mpeg4', '8bps', 'avs', 'bethsoftvid', 'binkvideo', 'bmv_video', 'cdgraphics', 'cdtoons', 'cdxl', 'clearvideo', 'cmv', 'cpia', 'dsicinvideo', 'dvvideo', 'ffv1', 'flic', 'h264', 'hevc', 'hnm4video', 'idcin', 'interplayvideo', 'jv', 'kmvc', 'magicyuv', 'mmvideo', 'motionpixels', 'mpeg1video', 'mpeg2video', 'msvideo1', 'mxpeg', 'paf_video', 'prores', 'qtrle', 'rawvideo', 'rl2', 'roq', 'rpza',
