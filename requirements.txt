@@ -2,3 +2,4 @@ alive-progress
 ffmpy
 Pillow
 pymediainfo
+psutil
