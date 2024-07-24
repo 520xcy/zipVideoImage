@@ -12,11 +12,12 @@ import argparse
 import datetime
 import subprocess
 import psutil
+import math
 
 GB = 1024 ** 3
 MB = 1024 ** 2
 KB = 1024
-MAX_CONNECTIONS = psutil.cpu_count()  # 同时转码进程数量
+MAX_CONNECTIONS = math.ceil(psutil.cpu_count()/2) # 同时转码进程数量
 BASHPATH = os.getcwd()
 # VIDEO_FORMAT = ['MPEG-4', 'AVI', 'Matroska']
 # VIDEO_FORMAT = ['avc', 'msmpeg4v1', 'msmpeg4v2', 'msmpeg4v3', 'mpeg4', '8bps', 'avs', 'bethsoftvid', 'binkvideo', 'bmv_video', 'cdgraphics', 'cdtoons', 'cdxl', 'clearvideo', 'cmv', 'cpia', 'dsicinvideo', 'dvvideo', 'ffv1', 'flic', 'h264', 'hevc', 'hnm4video', 'idcin', 'interplayvideo', 'jv', 'kmvc', 'magicyuv', 'mmvideo', 'motionpixels', 'mpeg1video', 'mpeg2video', 'msvideo1', 'mxpeg', 'paf_video', 'prores', 'qtrle', 'rawvideo', 'rl2', 'roq', 'rpza',
@@ -215,7 +216,7 @@ class zipVideo(threading.Thread):
             writeFile(ERROR_LOG,
                       f'{self.index}: {self.src}:{str(e)}\n\r')
             pass
-        
+
         finally:
             # 以下用来将完成的线程移除线程队列
             self.lck.acquire()
@@ -236,7 +237,6 @@ class zipVideo(threading.Thread):
     newthread = staticmethod(newthread)
 
 
-
 class fileInfo(threading.Thread):
     tlist = []  # 用来存储队列的线程
     maxthreads = MAX_CONNECTIONS
@@ -250,14 +250,14 @@ class fileInfo(threading.Thread):
     def run(self):
         try:
             tup_resp = ffmpy.FFprobe(
-                    inputs={self.src: None},
-                    global_options=[
-                        '-v', 'quiet',
-                        '-print_format', 'json',
-                        '-show_streams',
-                        '-show_format'
-                    ]
-                ).run(stdout=subprocess.PIPE)
+                inputs={self.src: None},
+                global_options=[
+                    '-v', 'quiet',
+                    '-print_format', 'json',
+                    '-show_streams',
+                    '-show_format'
+                ]
+            ).run(stdout=subprocess.PIPE)
             media_info = json.loads(tup_resp[0].decode('utf-8'))
             ft = checkFormat(media_info)
             if ft == 'video' and ziptype != 'image':
@@ -294,7 +294,7 @@ class fileInfo(threading.Thread):
         except Exception as e:
             writeFile(ERROR_LOG, f'{file}: {str(e)}\n\r')
             pass
-   
+
         finally:
             # 以下用来将完成的线程移除线程队列
             self.lck.acquire()
@@ -304,8 +304,7 @@ class fileInfo(threading.Thread):
                 self.evnt.set()
                 self.evnt.clear()
             self.lck.release()
-       
-        
+
     def newthread(src):
         fileInfo.lck.acquire()  # 上锁
         sc = fileInfo(src)
@@ -314,6 +313,7 @@ class fileInfo(threading.Thread):
         sc.start()
     # 将新线程方法定义为静态变量，供调用
     newthread = staticmethod(newthread)
+
 
 def get_size(file):
     # 获取文件大小:MB
@@ -437,22 +437,22 @@ if __name__ == '__main__':
     start = time.perf_counter()
     with alive_bar(len(files)) as bar:
         for index in range(0, count):
-            
+
             if index < S_INDEX - 1:
                 continue
             file = files[index]
-            
-                # tup_resp = ffmpy.FFprobe(
-                #     inputs={file: None},
-                #     global_options=[
-                #         '-v', 'quiet',
-                #         '-print_format', 'json',
-                #         '-show_streams',
-                #         '-show_format'
-                #     ]
-                # ).run(stdout=subprocess.PIPE)
-                # media_info = json.loads(tup_resp[0].decode('utf-8'))
-                # ft = checkFormat(media_info)
+
+            # tup_resp = ffmpy.FFprobe(
+            #     inputs={file: None},
+            #     global_options=[
+            #         '-v', 'quiet',
+            #         '-print_format', 'json',
+            #         '-show_streams',
+            #         '-show_format'
+            #     ]
+            # ).run(stdout=subprocess.PIPE)
+            # media_info = json.loads(tup_resp[0].decode('utf-8'))
+            # ft = checkFormat(media_info)
 
             fileInfo.lck.acquire()
             if len(fileInfo.tlist) >= fileInfo.maxthreads:
@@ -461,9 +461,9 @@ if __name__ == '__main__':
             else:
                 fileInfo.lck.release()
             fileInfo.newthread(file)
-            
+
             bar()
-    
+
     for tlist in fileInfo.tlist:
         tlist.join()
 
