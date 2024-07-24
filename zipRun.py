@@ -437,7 +437,7 @@ if __name__ == '__main__':
     start = time.perf_counter()
     with alive_bar(len(files)) as bar:
         for index in range(0, count):
-            bar()
+            
             if index < S_INDEX - 1:
                 continue
             file = files[index]
@@ -461,7 +461,8 @@ if __name__ == '__main__':
             else:
                 fileInfo.lck.release()
             fileInfo.newthread(file)
-                
+            
+            bar()
     
     for tlist in fileInfo.tlist:
         tlist.join()
