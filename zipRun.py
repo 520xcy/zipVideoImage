@@ -4,7 +4,7 @@
 import os
 import json
 import ffmpy
-import concurrent.futures
+from concurrent.futures import ProcessPoolExecutor,as_completed
 import time
 from alive_progress import alive_bar
 import random
@@ -12,12 +12,11 @@ import argparse
 import datetime
 import subprocess
 import psutil
-import math
 
 GB = 1024 ** 3
 MB = 1024 ** 2
 KB = 1024
-MAX_CONNECTIONS = math.ceil(psutil.cpu_count()) # 同时转码进程数量
+MAX_CONNECTIONS = psutil.cpu_count(logical=False)  # 同时转码进程数量
 BASHPATH = os.getcwd()
 # VIDEO_FORMAT = ['MPEG-4', 'AVI', 'Matroska']
 # VIDEO_FORMAT = ['avc', 'msmpeg4v1', 'msmpeg4v2', 'msmpeg4v3', 'mpeg4', '8bps', 'avs', 'bethsoftvid', 'binkvideo', 'bmv_video', 'cdgraphics', 'cdtoons', 'cdxl', 'clearvideo', 'cmv', 'cpia', 'dsicinvideo', 'dvvideo', 'ffv1', 'flic', 'h264', 'hevc', 'hnm4video', 'idcin', 'interplayvideo', 'jv', 'kmvc', 'magicyuv', 'mmvideo', 'motionpixels', 'mpeg1video', 'mpeg2video', 'msvideo1', 'mxpeg', 'paf_video', 'prores', 'qtrle', 'rawvideo', 'rl2', 'roq', 'rpza',
@@ -184,25 +183,29 @@ def runFfmpy(src, dst, s):
     raise RuntimeError('未找到合适的解码方式')
 
 
-def zipVideo(index, src, dst, size):
+def zipVideo(src, dst, size):
     try:
         o_size, d_size, run_time = runFfmpy(
             src, dst, size)
         if d_size < o_size:
-            writeFile(
-                SUCCESS_LOG, f'{index}: {src} {round(o_size / MB)}mb => {round(d_size / MB)}mb time{run_time}s\n\r')
             os.remove(src)
             os.rename(dst, dst.replace(
                 PYTHON_NAME+'_convert_', ''))
+            return {
+                'o_size': o_size,
+                'd_size': d_size,
+                'run_time': run_time
+            }
+
         elif os.path.exists(dst):
             os.remove(dst)
-    except Exception as e:
+       
+    except Exception:
         if os.path.exists(dst):
             os.remove(dst)
-        print('发生错误:', src, e)
-        writeFile(ERROR_LOG,
-                  f'{index}: {src}:{str(e)}\n\r')
-        pass
+        raise
+
+    raise RuntimeError('生成文件大于源文件')
 
 def get_size(file):
     # 获取文件大小:MB
@@ -238,30 +241,31 @@ def zip_img(infile, outfile):
     raise RuntimeError('未找到合适的压缩方式')
 
 
-def zipImg(index, filePath, outfile):
+def zipImg(filePath, outfile):
     try:
         o_size, d_size, run_time = zip_img(filePath, outfile)
         if d_size < o_size:
-            writeFile(SUCCESS_LOG,
-                      f'{index}: {filePath} => Size: {round(o_size / KB)}kb => {round(d_size / KB)}kb time{str(run_time)}s\n\r')
             os.remove(filePath)
             os.rename(outfile, outfile.replace(
                 PYTHON_NAME+'_resize_', ''))
+            return {
+                'o_size': o_size,
+                'd_size': d_size,
+                'run_time': run_time
+            }
+
         elif os.path.exists(outfile):
             os.remove(outfile)
-    except Exception as e:
+        
+    except Exception:
         if os.path.exists(outfile):
             os.remove(outfile)
-        print('发生错误:', filePath, e)
-        writeFile(
-            ERROR_LOG, f'{index}: {filePath} => {str(e)}\n\r')
-        pass
+        raise
+    raise RuntimeError('生成文件大于源文件')
 
-
-def worker(file,bar):
+def worker(index, file):
     
     try:
-    
         tup_resp = ffmpy.FFprobe(
             inputs={file: None},
             global_options=[
@@ -277,24 +281,27 @@ def worker(file,bar):
             size = getNewSize(media_info)
             dst = getNewName(file)
             if dst and size:
-                zipVideo(
-                    **{'index': index, 'src': file, 'dst': dst, 'size': size})
+                ret = zipVideo(
+                    **{'src': file, 'dst': dst, 'size': size})
+                return {
+                    'index': index,
+                    'filePath': file,
+                    **ret
+                }
         elif ft == 'image' and ziptype != 'video':
             outfile = get_new_img_name(file)
             if outfile:
-                zipImg(index, file, outfile)
+                ret = zipImg(file, outfile)
+                return {
+                    'index': index,
+                    'filePath': file,
+                    **ret
+                }
 
-    except KeyboardInterrupt:
-        exit()
-    except FileNotFoundError as e:
-        writeFile(ERROR_LOG, f'{file}: {str(e)}\n\r')
-        pass
-    except ffmpy.FFRuntimeError:
-        pass
     except Exception as e:
-        writeFile(ERROR_LOG, f'{file}: {str(e)}\n\r')
-        pass
-    bar()
+        raise Exception(f'{index}: {file}:{e}')
+    
+    raise RuntimeWarning(f'{index}: {file}:跳过')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='自动压缩图片和视频文件')
@@ -327,16 +334,39 @@ if __name__ == '__main__':
     IMAGE_WIDTH = args.imw
     S_INDEX = args.s
     MAX_CONNECTIONS = args.c
-    
+
     files = fileList(path)
     files.sort()
     count = len(files)
- 
+
     with alive_bar(count) as bar:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONNECTIONS) as executor:
-          for index in range(0, count):
-              if index < S_INDEX - 1:
-                  bar()
-                  continue
-              file = files[index]
-              executor.submit(worker, file, bar)
+        with ProcessPoolExecutor(max_workers=MAX_CONNECTIONS) as executor:
+            future_task = []
+            for index in range(count):
+                if index < S_INDEX - 1:
+                    bar()
+                    continue
+                file = files[index]
+                future_task.append(executor.submit(worker, index, file))
+
+            # for f in future_task:
+            #     if f.running():
+            #         print(f"{str(f)} is running")
+
+            for f in as_completed(future_task):
+                try:
+                    ret = f.done()
+                    if ret:
+                        f_ret = f.result()
+                        suc = f'{f_ret["index"]}: {f_ret["filePath"]} => Size: {round(f_ret["o_size"] / KB)}kb => {round(f_ret["d_size"] / KB)}kb time{str(f_ret["run_time"])}s'
+                        writeFile(SUCCESS_LOG, f'{suc}\n\r')
+                        print(suc)
+                except RuntimeWarning as e:
+                    f.cancel
+                    print(e)
+                except Exception as e:
+                    f.cancel()
+                    writeFile(ERROR_LOG, f'{str(e)}\n\r')
+                    print(e)
+                finally:
+                    bar()
